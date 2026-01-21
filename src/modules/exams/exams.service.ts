@@ -108,7 +108,7 @@ export class ExamsService {
 
     const passed = corrects >= exams.length * 0.6; // 60% to pass
 
-    const result = await this.prisma.examResult.create({
+    await this.prisma.examResult.create({
       data: {
         lessonGroupId: dto.lessonGroupId,
         userId,

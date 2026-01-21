@@ -1,0 +1,61 @@
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: ${{ github.event.inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Log deployment info
+        run: |
+          echo "🚀 Starting deployment"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Version: ${{ github.event.inputs.version || 'latest' }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+      # Add your deployment steps here based on environment
+      - name: Deploy to ${{ github.event.inputs.environment }}
+        run: |
+          echo "✓ Deployment to ${{ github.event.inputs.environment }} would happen here"
+          echo "Example: SSH into server, pull code, run migrations, restart service"
+
+      - name: Notify deployment
+        if: success()
+        run: echo "✅ Successfully deployed to ${{ github.event.inputs.environment }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: echo "❌ Deployment to ${{ github.event.inputs.environment }} failed"

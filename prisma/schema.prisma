@@ -48,7 +48,8 @@ enum ExamAnswer {
 // ==================== MODELS ====================
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
+  email     String   @unique
   phone     String   @unique
   password  String
   role      UserRole @default(STUDENT)
@@ -71,7 +72,7 @@ model User {
 }
 
 model MentorProfile {
-  id         Int     @id @default(autoincrement())
+  id         String  @id @default(uuid())
   about      String?
   job        String?
   experience Int
@@ -81,14 +82,14 @@ model MentorProfile {
   facebook   String?
   github     String?
   website    String?
-  userId     Int     @unique
+  userId     String  @unique
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model CourseCategory {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   name      String
   createdAt DateTime @default(now())
 
@@ -105,8 +106,8 @@ model Course {
   introVideo String?
   level      CourseLevel
   published  Boolean     @default(false)
-  categoryId Int
-  mentorId   Int
+  categoryId String
+  mentorId   String
   updatedAt  DateTime?   @updatedAt
   createdAt  DateTime    @default(now())
 
@@ -122,7 +123,7 @@ model Course {
 }
 
 model AssignedCourse {
-  userId    Int
+  userId    String
   courseId  String
   createdAt DateTime @default(now())
 
@@ -135,7 +136,7 @@ model AssignedCourse {
 
 model PurchasedCourse {
   courseId    String
-  userId      Int
+  userId      String
   amount      Decimal?
   paidVia     PaidVia
   purchasedAt DateTime @default(now())
@@ -148,11 +149,11 @@ model PurchasedCourse {
 }
 
 model Rating {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   rate      Int
   comment   String
   courseId  String
-  userId    Int
+  userId    String
   createdAt DateTime @default(now())
 
   // Relations
@@ -161,10 +162,10 @@ model Rating {
 }
 
 model LastActivity {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
+  id        String   @id @default(uuid())
+  userId    String   @unique
   courseId  String?
-  groupId   Int?
+  groupId   String?
   lessonId  String?
   url       String?
   updatedAt DateTime @default(now()) @updatedAt
@@ -177,7 +178,7 @@ model LastActivity {
 }
 
 model LessonGroup {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   name      String
   courseId  String
   createdAt DateTime @default(now())
@@ -195,7 +196,7 @@ model Lesson {
   name      String
   about     String
   video     String
-  groupId   Int
+  groupId   String
   updatedAt DateTime? @updatedAt
   createdAt DateTime  @default(now())
 
@@ -209,7 +210,7 @@ model Lesson {
 
 model LessonView {
   lessonId String
-  userId   Int
+  userId   String
   view     Boolean
 
   // Relations
@@ -220,7 +221,7 @@ model LessonView {
 }
 
 model LessonFile {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   file      String
   note      String?
   lessonId  String
@@ -231,7 +232,7 @@ model LessonFile {
 }
 
 model Homework {
-  id        Int       @id @default(autoincrement())
+  id        String    @id @default(uuid())
   task      String
   file      String?
   lessonId  String    @unique
@@ -244,13 +245,13 @@ model Homework {
 }
 
 model HomeworkSubmission {
-  id         Int               @id @default(autoincrement())
+  id         String            @id @default(uuid())
   text       String?
   file       String
   reason     String?
   status     HomeworkSubStatus @default(PENDING)
-  homeworkId Int
-  userId     Int
+  homeworkId String
+  userId     String
   updatedAt  DateTime?         @updatedAt
   createdAt  DateTime          @default(now())
 
@@ -260,14 +261,14 @@ model HomeworkSubmission {
 }
 
 model Exam {
-  id            Int        @id @default(autoincrement())
+  id            String     @id @default(uuid())
   question      String
   variantA      String
   variantB      String
   variantC      String
   variantD      String
   answer        ExamAnswer
-  lessonGroupId Int
+  lessonGroupId String
   createdAt     DateTime   @default(now())
 
   // Relations
@@ -275,9 +276,9 @@ model Exam {
 }
 
 model ExamResult {
-  id            Int      @id @default(autoincrement())
-  lessonGroupId Int
-  userId        Int
+  id            String   @id @default(uuid())
+  lessonGroupId String
+  userId        String
   passed        Boolean
   corrects      Int
   wrongs        Int
@@ -289,8 +290,8 @@ model ExamResult {
 }
 
 model Question {
-  id        Int       @id @default(autoincrement())
-  userId    Int
+  id        String    @id @default(uuid())
+  userId    String
   courseId  String
   text      String
   file      String?
@@ -306,9 +307,9 @@ model Question {
 }
 
 model QuestionAnswer {
-  id         Int       @id @default(autoincrement())
-  questionId Int       @unique
-  userId     Int
+  id         String    @id @default(uuid())
+  questionId String    @unique
+  userId     String
   text       String
   file       String?
   updatedAt  DateTime? @updatedAt
