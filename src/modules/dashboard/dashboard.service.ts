@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UserRole, HomeworkSubStatus } from '@prisma/client';
+import { HomeworkSubStatus } from '@prisma/client';
 
 @Injectable()
 export class DashboardService {

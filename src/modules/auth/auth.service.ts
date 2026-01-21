@@ -84,6 +84,7 @@ export class AuthService {
   }
 
   private excludePassword(user: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

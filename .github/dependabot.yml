@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "updates": [
+    {
+      "package-ecosystem": "npm",
+      "directory": "/",
+      "schedule": {
+        "interval": "weekly",
+        "day": "monday",
+        "time": "03:00"
+      },
+      "open-pull-requests-limit": 5,
+      "reviewers": ["@owner"],
+      "commit-message": {
+        "prefix": "chore(deps):",
+        "include": "scope"
+      },
+      "allow": [
+        {
+          "dependency-type": "production"
+        },
+        {
+          "dependency-type": "development"
+        }
+      ]
+    },
+    {
+      "package-ecosystem": "docker",
+      "directory": "/",
+      "schedule": {
+        "interval": "weekly",
+        "day": "monday",
+        "time": "03:00"
+      }
+    }
+  ]
+}
