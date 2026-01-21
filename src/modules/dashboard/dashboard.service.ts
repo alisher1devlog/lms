@@ -76,7 +76,7 @@ export class DashboardService {
     };
   }
 
-  async getMentorDashboard(mentorId: number) {
+  async getMentorDashboard(mentorId: string) {
     const [myCourses, totalStudents, totalRevenue, recentEnrollments] =
       await Promise.all([
         this.prisma.course.findMany({
@@ -137,7 +137,7 @@ export class DashboardService {
     };
   }
 
-  async getStudentDashboard(studentId: number) {
+  async getStudentDashboard(studentId: string) {
     const [enrolledCourses, completedLessons, pendingHomeworks, examResults] =
       await Promise.all([
         // Get enrolled courses count

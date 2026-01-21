@@ -12,9 +12,9 @@ export class ExamsService {
   constructor(private prisma: PrismaService) {}
 
   async createExam(
-    groupId: number,
+    groupId: string,
     dto: CreateExamDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const group = await this.prisma.lessonGroup.findUnique({
@@ -40,7 +40,7 @@ export class ExamsService {
     return { exam };
   }
 
-  async getExamsByGroup(groupId: number, userId: number) {
+  async getExamsByGroup(groupId: string, userId: string) {
     const group = await this.prisma.lessonGroup.findUnique({
       where: { id: groupId },
       include: { course: true },
@@ -71,7 +71,7 @@ export class ExamsService {
     return { exams };
   }
 
-  async submitExam(dto: SubmitExamDto, userId: number) {
+  async submitExam(dto: SubmitExamDto, userId: string) {
     const group = await this.prisma.lessonGroup.findUnique({
       where: { id: dto.lessonGroupId },
       include: { course: true },
@@ -129,7 +129,7 @@ export class ExamsService {
     };
   }
 
-  async getResults(userId: number, courseId?: string, groupId?: number) {
+  async getResults(userId: string, courseId?: string, groupId?: string) {
     const where: any = { userId };
 
     if (groupId) {
@@ -161,7 +161,7 @@ export class ExamsService {
     return { results };
   }
 
-  async deleteExam(id: number, userId: number, userRole: UserRole) {
+  async deleteExam(id: string, userId: string, userRole: UserRole) {
     const exam = await this.prisma.exam.findUnique({
       where: { id },
       include: {
@@ -188,7 +188,7 @@ export class ExamsService {
   }
 
   private async hasAccessToCourse(
-    userId: number,
+    userId: string,
     courseId: string,
   ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([

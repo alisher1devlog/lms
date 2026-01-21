@@ -6,7 +6,7 @@ import { UpdateActivityDto } from './dto';
 export class ActivityService {
   constructor(private prisma: PrismaService) {}
 
-  async getLastActivity(userId: number) {
+  async getLastActivity(userId: string) {
     const activity = await this.prisma.lastActivity.findUnique({
       where: { userId },
       include: {
@@ -35,7 +35,7 @@ export class ActivityService {
     return { activity };
   }
 
-  async updateActivity(userId: number, dto: UpdateActivityDto) {
+  async updateActivity(userId: string, dto: UpdateActivityDto) {
     const activity = await this.prisma.lastActivity.upsert({
       where: { userId },
       update: dto,

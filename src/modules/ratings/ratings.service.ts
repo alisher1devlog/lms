@@ -12,7 +12,7 @@ import { UserRole } from '@prisma/client';
 export class RatingsService {
   constructor(private prisma: PrismaService) {}
 
-  async createRating(courseId: string, dto: CreateRatingDto, userId: number) {
+  async createRating(courseId: string, dto: CreateRatingDto, userId: string) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -58,7 +58,11 @@ export class RatingsService {
     return { rating };
   }
 
-  async getRatingsByCourse(courseId: string, page = 1, limit = 10) {
+  async getRatingsByCourse(
+    courseId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -73,7 +77,7 @@ export class RatingsService {
       this.prisma.rating.findMany({
         where: { courseId },
         skip,
-        take: +limit,
+        take: limit,
         include: {
           user: {
             select: {
@@ -99,7 +103,7 @@ export class RatingsService {
     };
   }
 
-  async updateRating(id: number, dto: UpdateRatingDto, userId: number) {
+  async updateRating(id: string, dto: UpdateRatingDto, userId: string) {
     const rating = await this.prisma.rating.findUnique({
       where: { id },
     });
@@ -129,7 +133,7 @@ export class RatingsService {
     return { rating: updatedRating };
   }
 
-  async deleteRating(id: number, userId: number, userRole: UserRole) {
+  async deleteRating(id: string, userId: string, userRole: UserRole) {
     const rating = await this.prisma.rating.findUnique({
       where: { id },
     });
@@ -148,7 +152,7 @@ export class RatingsService {
   }
 
   private async hasAccessToCourse(
-    userId: number,
+    userId: string,
     courseId: string,
   ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([

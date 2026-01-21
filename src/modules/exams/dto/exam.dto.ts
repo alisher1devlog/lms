@@ -42,9 +42,9 @@ export class CreateExamDto {
 }
 
 class ExamAnswerDto {
-  @ApiProperty({ example: 1 })
-  @IsInt()
-  examId: number;
+  @ApiProperty({ example: 'exam-uuid' })
+  @IsString()
+  examId: string;
 
   @ApiProperty({ enum: ExamAnswer })
   @IsEnum(ExamAnswer)
@@ -52,9 +52,9 @@ class ExamAnswerDto {
 }
 
 export class SubmitExamDto {
-  @ApiProperty({ example: 1 })
-  @IsInt()
-  lessonGroupId: number;
+  @ApiProperty({ example: 'lesson-group-uuid' })
+  @IsString()
+  lessonGroupId: string;
 
   @ApiProperty({ type: [ExamAnswerDto] })
   @IsArray()

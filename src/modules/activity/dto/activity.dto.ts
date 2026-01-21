@@ -12,7 +12,7 @@ export class UpdateActivityDto {
   @IsInt()
   @IsOptional()
   @Type(() => Number)
-  groupId?: number;
+  groupId: string;
 
   @ApiPropertyOptional({ example: 'uuid-lesson-id' })
   @IsString()

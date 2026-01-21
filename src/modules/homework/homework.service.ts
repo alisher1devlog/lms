@@ -21,7 +21,7 @@ export class HomeworkService {
   async createHomework(
     lessonId: string,
     dto: CreateHomeworkDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -60,9 +60,9 @@ export class HomeworkService {
   }
 
   async updateHomework(
-    id: number,
+    id: string,
     dto: UpdateHomeworkDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const homework = await this.prisma.homework.findUnique({
@@ -97,7 +97,7 @@ export class HomeworkService {
     return { homework: updatedHomework };
   }
 
-  async deleteHomework(id: number, userId: number, userRole: UserRole) {
+  async deleteHomework(id: string, userId: string, userRole: UserRole) {
     const homework = await this.prisma.homework.findUnique({
       where: { id },
       include: {
@@ -128,9 +128,9 @@ export class HomeworkService {
   }
 
   async submitHomework(
-    homeworkId: number,
+    homeworkId: string,
     dto: SubmitHomeworkDto,
-    userId: number,
+    userId: string,
   ) {
     const homework = await this.prisma.homework.findUnique({
       where: { id: homeworkId },
@@ -178,9 +178,9 @@ export class HomeworkService {
   }
 
   async getSubmissions(
-    homeworkId: number,
+    homeworkId: string,
     query: QuerySubmissionDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const homework = await this.prisma.homework.findUnique({
@@ -237,9 +237,9 @@ export class HomeworkService {
   }
 
   async updateSubmissionStatus(
-    id: number,
+    id: string,
     dto: UpdateSubmissionStatusDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const submission = await this.prisma.homeworkSubmission.findUnique({
@@ -279,7 +279,7 @@ export class HomeworkService {
     return { submission: updatedSubmission };
   }
 
-  async getMySubmissions(userId: number) {
+  async getMySubmissions(userId: string) {
     const submissions = await this.prisma.homeworkSubmission.findMany({
       where: { userId },
       include: {
@@ -312,7 +312,7 @@ export class HomeworkService {
   }
 
   private async hasAccessToCourse(
-    userId: number,
+    userId: string,
     courseId: string,
   ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([

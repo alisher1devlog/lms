@@ -5,9 +5,7 @@ import {
   Put,
   Param,
   Body,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -36,7 +34,7 @@ export class MentorsController {
   @Get(':id')
   @ApiOperation({ summary: 'Mentor profili va kurslari' })
   @ApiResponse({ status: 200, description: "Mentor ma'lumotlari" })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id') id: string) {
     return this.mentorsService.findOne(id);
   }
 
@@ -48,7 +46,7 @@ export class MentorsController {
   @ApiResponse({ status: 201, description: 'Profil yaratildi' })
   async createProfile(
     @Body() dto: CreateMentorProfileDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.mentorsService.createProfile(userId, dto);
   }
@@ -61,7 +59,7 @@ export class MentorsController {
   @ApiResponse({ status: 200, description: 'Profil yangilandi' })
   async updateProfile(
     @Body() dto: UpdateMentorProfileDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.mentorsService.updateProfile(userId, dto);
   }

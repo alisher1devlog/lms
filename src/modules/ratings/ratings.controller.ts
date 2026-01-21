@@ -7,9 +7,7 @@ import {
   Param,
   Body,
   Query,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -37,7 +35,7 @@ export class RatingsController {
   async createRating(
     @Param('courseId') courseId: string,
     @Body() dto: CreateRatingDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.ratingsService.createRating(courseId, dto, userId);
   }
@@ -47,10 +45,12 @@ export class RatingsController {
   @ApiResponse({ status: 200, description: "Baholar ro'yxati" })
   async getRatingsByCourse(
     @Param('courseId') courseId: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.ratingsService.getRatingsByCourse(courseId, page, limit);
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 10;
+    return this.ratingsService.getRatingsByCourse(courseId, pageNum, limitNum);
   }
 
   @Put('ratings/:id')
@@ -59,9 +59,9 @@ export class RatingsController {
   @ApiOperation({ summary: 'Bahoni yangilash' })
   @ApiResponse({ status: 200, description: 'Baho yangilandi' })
   async updateRating(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateRatingDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.ratingsService.updateRating(id, dto, userId);
   }
@@ -72,8 +72,8 @@ export class RatingsController {
   @ApiOperation({ summary: "Bahoni o'chirish" })
   @ApiResponse({ status: 200, description: "Baho o'chirildi" })
   async deleteRating(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.ratingsService.deleteRating(id, userId, userRole);

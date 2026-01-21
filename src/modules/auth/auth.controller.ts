@@ -58,7 +58,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Joriy foydalanuvchi ma'lumotlarini olish" })
   @ApiResponse({ status: 200, description: "Foydalanuvchi ma'lumotlari" })
-  async getMe(@CurrentUser('id') userId: number) {
+  async getMe(@CurrentUser('id') userId: string) {
     return this.authService.getMe(userId);
   }
 }

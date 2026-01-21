@@ -21,7 +21,7 @@ export class MentorsService {
     return { mentors };
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const mentor = await this.prisma.user.findFirst({
       where: { id, role: UserRole.MENTOR },
       select: {
@@ -59,7 +59,7 @@ export class MentorsService {
     };
   }
 
-  async createProfile(userId: number, dto: CreateMentorProfileDto) {
+  async createProfile(userId: string, dto: CreateMentorProfileDto) {
     const existingProfile = await this.prisma.mentorProfile.findUnique({
       where: { userId },
     });
@@ -78,7 +78,7 @@ export class MentorsService {
     return { profile };
   }
 
-  async updateProfile(userId: number, dto: UpdateMentorProfileDto) {
+  async updateProfile(userId: string, dto: UpdateMentorProfileDto) {
     const profile = await this.prisma.mentorProfile.findUnique({
       where: { userId },
     });

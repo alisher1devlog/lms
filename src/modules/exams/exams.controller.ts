@@ -7,7 +7,6 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -35,9 +34,9 @@ export class ExamsController {
   @ApiOperation({ summary: 'Imtihon savoli yaratish' })
   @ApiResponse({ status: 201, description: 'Imtihon yaratildi' })
   async createExam(
-    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('groupId') groupId: string,
     @Body() dto: CreateExamDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.examsService.createExam(groupId, dto, userId, userRole);
@@ -49,8 +48,8 @@ export class ExamsController {
   @ApiOperation({ summary: "Bo'lim imtihon savollari" })
   @ApiResponse({ status: 200, description: "Savollar ro'yxati" })
   async getExamsByGroup(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @CurrentUser('id') userId: number,
+    @Param('groupId') groupId: string,
+    @CurrentUser('id') userId: string,
   ) {
     return this.examsService.getExamsByGroup(groupId, userId);
   }
@@ -62,7 +61,7 @@ export class ExamsController {
   @ApiResponse({ status: 200, description: 'Imtihon natijasi' })
   async submitExam(
     @Body() dto: SubmitExamDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.examsService.submitExam(dto, userId);
   }
@@ -74,8 +73,8 @@ export class ExamsController {
   @ApiResponse({ status: 200, description: "Natijalar ro'yxati" })
   async getResults(
     @Query('courseId') courseId?: string,
-    @Query('groupId') groupId?: number,
-    @CurrentUser('id') userId?: number,
+    @Query('groupId') groupId?: string,
+    @CurrentUser('id') userId?: string,
   ) {
     return this.examsService.getResults(userId, courseId, groupId);
   }
@@ -86,8 +85,8 @@ export class ExamsController {
   @ApiOperation({ summary: "Imtihonni o'chirish" })
   @ApiResponse({ status: 200, description: "Imtihon o'chirildi" })
   async deleteExam(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.examsService.deleteExam(id, userId, userRole);

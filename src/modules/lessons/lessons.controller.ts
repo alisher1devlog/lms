@@ -6,9 +6,7 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -38,8 +36,8 @@ export class LessonsController {
   @ApiOperation({ summary: "Bo'lim darslari" })
   @ApiResponse({ status: 200, description: "Darslar ro'yxati" })
   async findAllByGroup(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @CurrentUser('id') userId: number,
+    @Param('groupId') groupId: string,
+    @CurrentUser('id') userId: string,
   ) {
     return this.lessonsService.findAllByGroup(groupId, userId);
   }
@@ -49,7 +47,7 @@ export class LessonsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Dars ma'lumotlari" })
   @ApiResponse({ status: 200, description: "Dars ma'lumotlari" })
-  async findOne(@Param('id') id: string, @CurrentUser('id') userId: number) {
+  async findOne(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.lessonsService.findOne(id, userId);
   }
 
@@ -60,9 +58,9 @@ export class LessonsController {
   @ApiOperation({ summary: 'Yangi dars yaratish' })
   @ApiResponse({ status: 201, description: 'Dars yaratildi' })
   async create(
-    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('groupId') groupId: string,
     @Body() dto: CreateLessonDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonsService.create(groupId, dto, userId, userRole);
@@ -77,7 +75,7 @@ export class LessonsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateLessonDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonsService.update(id, dto, userId, userRole);
@@ -91,7 +89,7 @@ export class LessonsController {
   @ApiResponse({ status: 200, description: "Dars o'chirildi" })
   async remove(
     @Param('id') id: string,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonsService.remove(id, userId, userRole);
@@ -105,7 +103,7 @@ export class LessonsController {
   async markAsViewed(
     @Param('id') id: string,
     @Body() dto: LessonViewDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.lessonsService.markAsViewed(id, userId, dto);
   }
@@ -118,7 +116,7 @@ export class LessonsController {
   @ApiResponse({ status: 200, description: "Fayllar ro'yxati" })
   async getFiles(
     @Param('lessonId') lessonId: string,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.lessonsService.getFiles(lessonId, userId);
   }
@@ -132,7 +130,7 @@ export class LessonsController {
   async addFile(
     @Param('lessonId') lessonId: string,
     @Body() dto: CreateLessonFileDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonsService.addFile(lessonId, dto, userId, userRole);
@@ -145,8 +143,8 @@ export class LessonsController {
   @ApiOperation({ summary: "Faylni o'chirish" })
   @ApiResponse({ status: 200, description: "Fayl o'chirildi" })
   async removeFile(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonsService.removeFile(id, userId, userRole);

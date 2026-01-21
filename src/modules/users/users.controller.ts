@@ -6,9 +6,7 @@ import {
   Param,
   Body,
   Query,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -41,7 +39,7 @@ export class UsersController {
   @Get(':id')
   @ApiOperation({ summary: "Foydalanuvchi ma'lumotlarini olish" })
   @ApiResponse({ status: 200, description: "Foydalanuvchi ma'lumotlari" })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
@@ -49,9 +47,9 @@ export class UsersController {
   @ApiOperation({ summary: "Foydalanuvchi ma'lumotlarini yangilash" })
   @ApiResponse({ status: 200, description: 'Yangilangan foydalanuvchi' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateUserDto,
-    @CurrentUser('id') currentUserId: number,
+    @CurrentUser('id') currentUserId: string,
     @CurrentUser('role') currentUserRole: UserRole,
   ) {
     return this.usersService.update(id, dto, currentUserId, currentUserRole);
@@ -62,7 +60,7 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Foydalanuvchini o'chirish" })
   @ApiResponse({ status: 200, description: "Foydalanuvchi o'chirildi" })
-  async remove(@Param('id', ParseIntPipe) id: number) {
+  async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 }

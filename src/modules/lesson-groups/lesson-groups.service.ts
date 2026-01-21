@@ -47,7 +47,7 @@ export class LessonGroupsService {
   async create(
     courseId: string,
     dto: CreateLessonGroupDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const course = await this.prisma.course.findUnique({
@@ -73,9 +73,9 @@ export class LessonGroupsService {
   }
 
   async update(
-    id: number,
+    id: string,
     dto: UpdateLessonGroupDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const group = await this.prisma.lessonGroup.findUnique({
@@ -99,7 +99,7 @@ export class LessonGroupsService {
     return { group: updatedGroup };
   }
 
-  async remove(id: number, userId: number, userRole: UserRole) {
+  async remove(id: string, userId: string, userRole: UserRole) {
     const group = await this.prisma.lessonGroup.findUnique({
       where: { id },
       include: { course: true },
