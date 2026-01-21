@@ -16,7 +16,7 @@ import { UserRole } from '@prisma/client';
 export class LessonsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllByGroup(groupId: number, userId: number) {
+  async findAllByGroup(groupId: string, userId: string) {
     const group = await this.prisma.lessonGroup.findUnique({
       where: { id: groupId },
       include: { course: true },
@@ -61,7 +61,7 @@ export class LessonsService {
     };
   }
 
-  async findOne(id: string, userId: number) {
+  async findOne(id: string, userId: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
@@ -99,9 +99,9 @@ export class LessonsService {
   }
 
   async create(
-    groupId: number,
+    groupId: string,
     dto: CreateLessonDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const group = await this.prisma.lessonGroup.findUnique({
@@ -130,7 +130,7 @@ export class LessonsService {
   async update(
     id: string,
     dto: UpdateLessonDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -161,7 +161,7 @@ export class LessonsService {
     return { lesson: updatedLesson };
   }
 
-  async remove(id: string, userId: number, userRole: UserRole) {
+  async remove(id: string, userId: string, userRole: UserRole) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
@@ -187,7 +187,7 @@ export class LessonsService {
     return { message: "Dars o'chirildi" };
   }
 
-  async markAsViewed(id: string, userId: number, dto: LessonViewDto) {
+  async markAsViewed(id: string, userId: string, dto: LessonViewDto) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
@@ -228,7 +228,7 @@ export class LessonsService {
   }
 
   // Lesson Files
-  async getFiles(lessonId: string, userId: number) {
+  async getFiles(lessonId: string, userId: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {
@@ -261,7 +261,7 @@ export class LessonsService {
   async addFile(
     lessonId: string,
     dto: CreateLessonFileDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -294,7 +294,7 @@ export class LessonsService {
     return { file };
   }
 
-  async removeFile(fileId: number, userId: number, userRole: UserRole) {
+  async removeFile(fileId: string, userId: string, userRole: UserRole) {
     const file = await this.prisma.lessonFile.findUnique({
       where: { id: fileId },
       include: {
@@ -325,7 +325,7 @@ export class LessonsService {
   }
 
   private async hasAccessToCourse(
-    userId: number,
+    userId: string,
     courseId: string,
   ): Promise<boolean> {
     const user = await this.prisma.user.findUnique({

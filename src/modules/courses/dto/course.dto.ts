@@ -44,7 +44,7 @@ export class CreateCourseDto {
   @ApiProperty({ example: 1 })
   @IsInt()
   @Type(() => Number)
-  categoryId: number;
+  categoryId: string;
 }
 
 export class UpdateCourseDto {
@@ -89,7 +89,7 @@ export class QueryCourseDto {
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
-  categoryId?: number;
+  categoryId: string;
 
   @ApiPropertyOptional({ enum: CourseLevel })
   @IsEnum(CourseLevel)
@@ -131,5 +131,5 @@ export class AssignCourseDto {
   @ApiProperty({ example: 1 })
   @IsInt()
   @Type(() => Number)
-  userId: number;
+  userId: string;
 }

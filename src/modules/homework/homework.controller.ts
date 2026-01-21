@@ -7,9 +7,7 @@ import {
   Param,
   Body,
   Query,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -44,7 +42,7 @@ export class HomeworkController {
   async createHomework(
     @Param('lessonId') lessonId: string,
     @Body() dto: CreateHomeworkDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.homeworkService.createHomework(lessonId, dto, userId, userRole);
@@ -56,9 +54,9 @@ export class HomeworkController {
   @ApiOperation({ summary: 'Vazifani yangilash' })
   @ApiResponse({ status: 200, description: 'Vazifa yangilandi' })
   async updateHomework(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateHomeworkDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.homeworkService.updateHomework(id, dto, userId, userRole);
@@ -70,8 +68,8 @@ export class HomeworkController {
   @ApiOperation({ summary: "Vazifani o'chirish" })
   @ApiResponse({ status: 200, description: "Vazifa o'chirildi" })
   async deleteHomework(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.homeworkService.deleteHomework(id, userId, userRole);
@@ -83,9 +81,9 @@ export class HomeworkController {
   @ApiOperation({ summary: 'Vazifani topshirish' })
   @ApiResponse({ status: 201, description: 'Vazifa topshirildi' })
   async submitHomework(
-    @Param('homeworkId', ParseIntPipe) homeworkId: number,
+    @Param('homeworkId') homeworkId: string,
     @Body() dto: SubmitHomeworkDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.homeworkService.submitHomework(homeworkId, dto, userId);
   }
@@ -96,9 +94,9 @@ export class HomeworkController {
   @ApiOperation({ summary: 'Vazifa topshiriqlari' })
   @ApiResponse({ status: 200, description: "Topshiriqlar ro'yxati" })
   async getSubmissions(
-    @Param('homeworkId', ParseIntPipe) homeworkId: number,
+    @Param('homeworkId') homeworkId: string,
     @Query() query: QuerySubmissionDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.homeworkService.getSubmissions(
@@ -115,9 +113,9 @@ export class HomeworkController {
   @ApiOperation({ summary: "Topshiriq statusini o'zgartirish" })
   @ApiResponse({ status: 200, description: "Status o'zgartirildi" })
   async updateSubmissionStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateSubmissionStatusDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.homeworkService.updateSubmissionStatus(
@@ -133,7 +131,7 @@ export class HomeworkController {
   @Roles(UserRole.STUDENT)
   @ApiOperation({ summary: 'Mening topshiriqlarim' })
   @ApiResponse({ status: 200, description: "Topshiriqlar ro'yxati" })
-  async getMySubmissions(@CurrentUser('id') userId: number) {
+  async getMySubmissions(@CurrentUser('id') userId: string) {
     return this.homeworkService.getMySubmissions(userId);
   }
 }

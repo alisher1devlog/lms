@@ -48,7 +48,7 @@ export class CoursesController {
     status: 200,
     description: 'Sotib olingan va biriktirilgan kurslar',
   })
-  async getMyCourses(@CurrentUser('id') userId: number) {
+  async getMyCourses(@CurrentUser('id') userId: string) {
     return this.coursesService.getMyCourses(userId);
   }
 
@@ -67,7 +67,7 @@ export class CoursesController {
   @ApiResponse({ status: 201, description: 'Kurs yaratildi' })
   async create(
     @Body() dto: CreateCourseDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.coursesService.create(dto, userId);
   }
@@ -81,7 +81,7 @@ export class CoursesController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateCourseDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.coursesService.update(id, dto, userId, userRole);
@@ -95,7 +95,7 @@ export class CoursesController {
   @ApiResponse({ status: 200, description: "Kurs o'chirildi" })
   async remove(
     @Param('id') id: string,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.coursesService.remove(id, userId, userRole);
@@ -109,7 +109,7 @@ export class CoursesController {
   @ApiResponse({ status: 200, description: "Talabalar ro'yxati" })
   async getStudents(
     @Param('id') id: string,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.coursesService.getStudents(id, userId, userRole);
@@ -124,7 +124,7 @@ export class CoursesController {
   async purchase(
     @Param('id') id: string,
     @Body() dto: PurchaseCourseDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.coursesService.purchase(id, userId, dto);
   }

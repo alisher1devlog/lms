@@ -23,7 +23,7 @@ export class ActivityController {
   @Get('last')
   @ApiOperation({ summary: "So'nggi faoliyat" })
   @ApiResponse({ status: 200, description: "So'nggi faoliyat ma'lumotlari" })
-  async getLastActivity(@CurrentUser('id') userId: number) {
+  async getLastActivity(@CurrentUser('id') userId: string) {
     return this.activityService.getLastActivity(userId);
   }
 
@@ -31,7 +31,7 @@ export class ActivityController {
   @ApiOperation({ summary: 'Faoliyatni yangilash' })
   @ApiResponse({ status: 200, description: 'Faoliyat yangilandi' })
   async updateActivity(
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @Body() dto: UpdateActivityDto,
   ) {
     return this.activityService.updateActivity(userId, dto);

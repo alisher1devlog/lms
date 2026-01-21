@@ -6,9 +6,7 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -51,7 +49,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Kategoriyani yangilash' })
   @ApiResponse({ status: 200, description: 'Kategoriya yangilandi' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
   ) {
     return this.categoriesService.update(id, dto);
@@ -63,7 +61,7 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Kategoriyani o'chirish" })
   @ApiResponse({ status: 200, description: "Kategoriya o'chirildi" })
-  async remove(@Param('id', ParseIntPipe) id: number) {
+  async remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
   }
 }

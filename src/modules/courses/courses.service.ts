@@ -131,7 +131,7 @@ export class CoursesService {
     };
   }
 
-  async create(dto: CreateCourseDto, mentorId: number) {
+  async create(dto: CreateCourseDto, mentorId: string) {
     const course = await this.prisma.course.create({
       data: {
         ...dto,
@@ -154,7 +154,7 @@ export class CoursesService {
   async update(
     id: string,
     dto: UpdateCourseDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const course = await this.prisma.course.findUnique({ where: { id } });
@@ -184,7 +184,7 @@ export class CoursesService {
     return { course: updatedCourse };
   }
 
-  async remove(id: string, userId: number, userRole: UserRole) {
+  async remove(id: string, userId: string, userRole: UserRole) {
     const course = await this.prisma.course.findUnique({ where: { id } });
 
     if (!course) {
@@ -200,7 +200,7 @@ export class CoursesService {
     return { message: "Kurs o'chirildi" };
   }
 
-  async getStudents(courseId: string, userId: number, userRole: UserRole) {
+  async getStudents(courseId: string, userId: string, userRole: UserRole) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -262,7 +262,7 @@ export class CoursesService {
     return { students };
   }
 
-  async purchase(courseId: string, userId: number, dto: PurchaseCourseDto) {
+  async purchase(courseId: string, userId: string, dto: PurchaseCourseDto) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -371,7 +371,7 @@ export class CoursesService {
     return { assignment };
   }
 
-  async getMyCourses(userId: number) {
+  async getMyCourses(userId: string) {
     const [purchased, assigned] = await Promise.all([
       this.prisma.purchasedCourse.findMany({
         where: { userId },
@@ -427,7 +427,7 @@ export class CoursesService {
     return { courses };
   }
 
-  async hasAccessToCourse(userId: number, courseId: string): Promise<boolean> {
+  async hasAccessToCourse(userId: string, courseId: string): Promise<boolean> {
     const [purchased, assigned, course] = await Promise.all([
       this.prisma.purchasedCourse.findUnique({
         where: { userId_courseId: { userId, courseId } },

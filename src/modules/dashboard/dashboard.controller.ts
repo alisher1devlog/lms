@@ -32,7 +32,7 @@ export class DashboardController {
   @Roles(UserRole.MENTOR)
   @ApiOperation({ summary: 'Mentor dashboard' })
   @ApiResponse({ status: 200, description: 'Mentor statistikasi' })
-  async getMentorDashboard(@CurrentUser('id') mentorId: number) {
+  async getMentorDashboard(@CurrentUser('id') mentorId: string) {
     return this.dashboardService.getMentorDashboard(mentorId);
   }
 
@@ -41,7 +41,7 @@ export class DashboardController {
   @Roles(UserRole.STUDENT)
   @ApiOperation({ summary: 'Student dashboard' })
   @ApiResponse({ status: 200, description: 'Student statistikasi' })
-  async getStudentDashboard(@CurrentUser('id') studentId: number) {
+  async getStudentDashboard(@CurrentUser('id') studentId: string) {
     return this.dashboardService.getStudentDashboard(studentId);
   }
 }

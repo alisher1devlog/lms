@@ -30,6 +30,7 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
+        email: dto.email,
         phone: dto.phone,
         password: hashedPassword,
         fullName: dto.fullName,
@@ -68,7 +69,7 @@ export class AuthService {
     };
   }
 
-  async getMe(userId: number) {
+  async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -79,7 +80,7 @@ export class AuthService {
     return { user: this.excludePassword(user) };
   }
 
-  private generateToken(userId: number, phone: string): string {
+  private generateToken(userId: string, phone: string): string {
     return this.jwtService.sign({ sub: userId, phone });
   }
 

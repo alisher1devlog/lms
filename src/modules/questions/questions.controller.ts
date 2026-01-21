@@ -6,9 +6,7 @@ import {
   Param,
   Body,
   Query,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -37,7 +35,7 @@ export class QuestionsController {
   async createQuestion(
     @Param('courseId') courseId: string,
     @Body() dto: CreateQuestionDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
   ) {
     return this.questionsService.createQuestion(courseId, dto, userId);
   }
@@ -50,20 +48,22 @@ export class QuestionsController {
   async getQuestionsByCourse(
     @Param('courseId') courseId: string,
     @Query('read') read?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @CurrentUser('id') userId?: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @CurrentUser('id') userId?: string,
     @CurrentUser('role') userRole?: UserRole,
   ) {
     const readBool =
       read === 'true' ? true : read === 'false' ? false : undefined;
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 10;
     return this.questionsService.getQuestionsByCourse(
       courseId,
       userId,
       userRole,
       readBool,
-      page,
-      limit,
+      pageNum,
+      limitNum,
     );
   }
 
@@ -72,7 +72,7 @@ export class QuestionsController {
   @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT)
   @ApiOperation({ summary: "Savolni o'qilgan deb belgilash" })
   @ApiResponse({ status: 200, description: 'Savol belgilandi' })
-  async markAsRead(@Param('id', ParseIntPipe) id: number) {
+  async markAsRead(@Param('id') id: string) {
     return this.questionsService.markAsRead(id);
   }
 
@@ -82,9 +82,9 @@ export class QuestionsController {
   @ApiOperation({ summary: 'Savolga javob berish' })
   @ApiResponse({ status: 201, description: 'Javob berildi' })
   async answerQuestion(
-    @Param('questionId', ParseIntPipe) questionId: number,
+    @Param('questionId') questionId: string,
     @Body() dto: CreateAnswerDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.questionsService.answerQuestion(
@@ -101,9 +101,9 @@ export class QuestionsController {
   @ApiOperation({ summary: 'Javobni yangilash' })
   @ApiResponse({ status: 200, description: 'Javob yangilandi' })
   async updateAnswer(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateAnswerDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.questionsService.updateAnswer(id, dto, userId, userRole);
@@ -114,7 +114,7 @@ export class QuestionsController {
   @Roles(UserRole.STUDENT)
   @ApiOperation({ summary: 'Mening savollarim' })
   @ApiResponse({ status: 200, description: "Savollar ro'yxati" })
-  async getMyQuestions(@CurrentUser('id') userId: number) {
+  async getMyQuestions(@CurrentUser('id') userId: string) {
     return this.questionsService.getMyQuestions(userId);
   }
 }

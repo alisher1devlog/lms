@@ -14,7 +14,7 @@ export class QuestionsService {
   async createQuestion(
     courseId: string,
     dto: CreateQuestionDto,
-    userId: number,
+    userId: string,
   ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -42,11 +42,11 @@ export class QuestionsService {
 
   async getQuestionsByCourse(
     courseId: string,
-    userId: number,
+    userId: string,
     userRole: UserRole,
     read?: boolean,
-    page = 1,
-    limit = 10,
+    page: number = 1,
+    limit: number = 10,
   ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -65,6 +65,7 @@ export class QuestionsService {
     }
 
     const skip = (page - 1) * limit;
+
     const where: any = { courseId };
     if (read !== undefined) where.read = read;
 
@@ -72,7 +73,7 @@ export class QuestionsService {
       this.prisma.question.findMany({
         where,
         skip,
-        take: +limit,
+        take: limit,
         include: {
           user: {
             select: {
@@ -100,7 +101,7 @@ export class QuestionsService {
     return { questions, total };
   }
 
-  async markAsRead(id: number) {
+  async markAsRead(id: string) {
     const question = await this.prisma.question.findUnique({
       where: { id },
     });
@@ -121,9 +122,9 @@ export class QuestionsService {
   }
 
   async answerQuestion(
-    questionId: number,
+    questionId: string,
     dto: CreateAnswerDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const question = await this.prisma.question.findUnique({
@@ -161,9 +162,9 @@ export class QuestionsService {
   }
 
   async updateAnswer(
-    id: number,
+    id: string,
     dto: UpdateAnswerDto,
-    userId: number,
+    userId: string,
     userRole: UserRole,
   ) {
     const answer = await this.prisma.questionAnswer.findUnique({
@@ -190,7 +191,7 @@ export class QuestionsService {
     return { answer: updatedAnswer };
   }
 
-  async getMyQuestions(userId: number) {
+  async getMyQuestions(userId: string) {
     const questions = await this.prisma.question.findMany({
       where: { userId },
       include: {
@@ -218,7 +219,7 @@ export class QuestionsService {
   }
 
   private async hasAccessToCourse(
-    userId: number,
+    userId: string,
     courseId: string,
   ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([

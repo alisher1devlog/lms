@@ -6,9 +6,7 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
-  ParseIntPipe,
-} from '@nestjs/common';
+  UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -43,7 +41,7 @@ export class LessonGroupsController {
   async create(
     @Param('courseId') courseId: string,
     @Body() dto: CreateLessonGroupDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonGroupsService.create(courseId, dto, userId, userRole);
@@ -56,9 +54,9 @@ export class LessonGroupsController {
   @ApiOperation({ summary: "Bo'limni yangilash" })
   @ApiResponse({ status: 200, description: "Bo'lim yangilandi" })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateLessonGroupDto,
-    @CurrentUser('id') userId: number,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonGroupsService.update(id, dto, userId, userRole);
@@ -71,8 +69,8 @@ export class LessonGroupsController {
   @ApiOperation({ summary: "Bo'limni o'chirish" })
   @ApiResponse({ status: 200, description: "Bo'lim o'chirildi" })
   async remove(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonGroupsService.remove(id, userId, userRole);
