@@ -46,11 +46,31 @@ enum ExamAnswer {
   variantD
 }
 
+enum OTPType {
+  REGISTRATION
+  PASSWORD_RESET
+  PHONE_CHANGE
+  EMAIL_VERIFICATION
+}
+
 // ==================== MODELS ====================
+
+model OTP {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  type      OTPType  @default(REGISTRATION)
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([phone, code, type])
+  @@index([phone, type])
+}
 
 model User {
   id        String   @id @default(uuid())
-  email     String   @unique
+  email     String?  @unique
   phone     String   @unique
   password  String
   role      UserRole @default(STUDENT)
@@ -94,7 +114,6 @@ model CourseCategory {
   name      String
   createdAt DateTime @default(now())
 
-  // Relations
   courses Course[]
 }
 

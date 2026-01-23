@@ -63,8 +63,27 @@ services:
     networks:
       - lms_network
 
+  # Redis Cache (OTP storage va SMS queue)
+  redis:
+    image: redis:7-alpine
+    container_name: lms_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ 'CMD', 'redis-cli', 'ping' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lms_network
+    command: redis-server --appendonly yes
+
 volumes:
   postgres_data:
+  redis_data:
 
 
 networks:

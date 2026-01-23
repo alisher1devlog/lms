@@ -6,7 +6,8 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards} from '@nestjs/common';
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -48,10 +49,7 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Kategoriyani yangilash' })
   @ApiResponse({ status: 200, description: 'Kategoriya yangilandi' })
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateCategoryDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoriesService.update(id, dto);
   }
 

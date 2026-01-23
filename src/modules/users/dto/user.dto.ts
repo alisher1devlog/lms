@@ -38,3 +38,9 @@ export class QueryUserDto {
   @IsOptional()
   limit?: number;
 }
+
+export class UpdateUserRoleDto {
+  @ApiPropertyOptional({ enum: UserRole })
+  @IsEnum(UserRole)
+  role: UserRole;
+}
