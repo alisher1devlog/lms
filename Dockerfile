@@ -14,6 +14,7 @@ COPY . .
 
 RUN npm run build
 
+# Production stage
 FROM node:20-alpine AS production
 
 WORKDIR /app
@@ -21,7 +22,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 RUN npx prisma generate
 
@@ -31,6 +32,7 @@ EXPOSE 3000
 
 CMD ["node", "dist/main.js"]
 
+# Development stage
 FROM node:20-alpine AS development
 
 WORKDIR /app

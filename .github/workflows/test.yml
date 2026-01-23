@@ -56,6 +56,8 @@ jobs:
 
       - name: Unit tests
         run: npm run test:cov
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_test?schema=public
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
