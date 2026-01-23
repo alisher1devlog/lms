@@ -11,7 +11,6 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SmsService } from '../../sms/sms.service';
 import {
-  RegisterDto,
   LoginDto,
   SendOtpDto,
   VerifyOtpDto,
@@ -345,6 +344,7 @@ export class AuthService {
       throw new UnauthorizedException(
         "Noto'g'ri yoki muddati o'tgan refresh token",
       );
+      console.error(error);
     }
   }
 
