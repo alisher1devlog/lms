@@ -1,100 +1,40 @@
-import {
-  IsString,
-  IsNotEmpty,
-  MinLength,
-  IsEmail,
-  IsOptional,
-} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
 
-export class RegisterInitDto {
-  @ApiProperty({ example: '+998901234567' })
-  @IsString()
-  @IsNotEmpty()
-  phone: string;
-
-  @ApiProperty({ example: 'John Doe' })
-  @IsString()
-  @IsNotEmpty()
-  fullName: string;
-}
-
-export class CompleteRegistrationDto {
-  @ApiProperty({ example: '+998901234567' })
-  @IsString()
-  @IsNotEmpty()
-  phone: string;
-
-  @ApiProperty({ example: '123456' })
-  @IsString()
-  @IsNotEmpty()
-  otpCode: string;
-
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({ example: 'password123' })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
-
-  @ApiProperty({ example: 'John Doe' })
-  @IsString()
-  @IsOptional()
-  fullName?: string;
-}
-
-// Password Reset DTOs
-export class ForgotPasswordDto {
-  @ApiProperty({ example: '+998901234567' })
-  @IsString()
-  @IsNotEmpty()
-  phone: string;
-}
-
-// Email Verification DTOs
-export class VerifyEmailDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-}
-
-export class CompleteEmailVerificationDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({ example: '123456' })
-  @IsString()
-  @IsNotEmpty()
-  otpCode: string;
-}
-
-// Eski registerDto uchun compatibility
 export class RegisterDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({ example: '+998901234567' })
+  @ApiProperty({
+    description: 'Telefon raqam',
+    example: '+998902400025',
+  })
+  @IsNotEmpty({ message: 'Telefon raqam kiritilishi shart' })
   @IsString()
-  @IsNotEmpty()
+  @Matches(/^\+998[0-9]{9}$/, {
+    message: "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak",
+  })
   phone: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({
+    description: 'OTP kod',
+    example: '000000',
+  })
+  @IsNotEmpty({ message: 'OTP kod kiritilishi shart' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
+  otp: string;
 
-  @ApiProperty({ example: 'John Doe' })
+  @ApiProperty({
+    description: "To'liq ism",
+    example: 'John Doe',
+  })
+  @IsNotEmpty({ message: "To'liq ism kiritilishi shart" })
   @IsString()
-  @IsNotEmpty()
   fullName: string;
+
+  @ApiProperty({
+    description: 'Parol (kamida 6 ta belgi)',
+    example: 'password123',
+  })
+  @IsNotEmpty({ message: 'Parol kiritilishi shart' })
+  @IsString()
+  @MinLength(6, { message: "Parol kamida 6 ta belgidan iborat bo'lishi kerak" })
+  password: string;
 }

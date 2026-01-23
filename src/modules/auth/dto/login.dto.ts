@@ -1,14 +1,23 @@
-import { IsString, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class LoginDto {
-  @ApiProperty({ example: '+998901234567' })
+  @ApiProperty({
+    description: 'Telefon raqam',
+    example: '+998902400025',
+  })
+  @IsNotEmpty({ message: 'Telefon raqam kiritilishi shart' })
   @IsString()
-  @IsNotEmpty()
+  @Matches(/^\+998[0-9]{9}$/, {
+    message: "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak",
+  })
   phone: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({
+    description: 'Parol',
+    example: 'password123',
+  })
+  @IsNotEmpty({ message: 'Parol kiritilishi shart' })
   @IsString()
-  @IsNotEmpty()
   password: string;
 }
