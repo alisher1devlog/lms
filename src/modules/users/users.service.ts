@@ -2,15 +2,79 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UpdateUserDto, QueryUserDto } from './dto';
-import { UserRole } from '@prisma/client';
+import {
+  QueryUserDto,
+  UpdateProfileDto,
+  UpdatePasswordDto,
+  UpdatePhoneDto,
+  UpdateMentorProfileDto,
+  UpdateLastActivityDto,
+  CreateAdminDto,
+  CreateMentorDto,
+  CreateAssistantDto,
+  UpdateMentorDto,
+} from './dto';
+import { UserRole, OTPType } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
+
+  async getMentors() {
+    const mentors = await this.prisma.user.findMany({
+      where: { role: UserRole.MENTOR },
+      select: {
+        id: true,
+        phone: true,
+        fullName: true,
+        image: true,
+        createdAt: true,
+        mentorProfile: {
+          select: {
+            about: true,
+            job: true,
+            experience: true,
+            telegram: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { mentors };
+  }
+
+  async getMentorById(id: string) {
+    const mentor = await this.prisma.user.findUnique({
+      where: { id, role: UserRole.MENTOR },
+      select: {
+        id: true,
+        phone: true,
+        fullName: true,
+        image: true,
+        createdAt: true,
+        mentorProfile: {
+          select: {
+            about: true,
+            job: true,
+            experience: true,
+            telegram: true,
+          },
+        },
+      },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Mentor topilmadi');
+    }
+
+    return { mentor };
+  }
 
   async findAll(query: QueryUserDto) {
     const { role, page = 1, limit = 10 } = query;
@@ -65,33 +129,9 @@ export class UsersService {
     return { user };
   }
 
-  async update(
-    id: string,
-    dto: UpdateUserDto,
-    currentUserId: string,
-    currentUserRole: UserRole,
-  ) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-
-    if (!user) {
-      throw new NotFoundException('Foydalanuvchi topilmadi');
-    }
-
-    // Faqat o'zi yoki admin o'zgartira oladi
-    if (currentUserRole !== UserRole.ADMIN && currentUserId !== id) {
-      throw new ForbiddenException("Ruxsat yo'q");
-    }
-
-    const updateData: any = {};
-
-    if (dto.fullName) updateData.fullName = dto.fullName;
-    if (dto.image) updateData.image = dto.image;
-    if (dto.phone) updateData.phone = dto.phone;
-    if (dto.password) updateData.password = await bcrypt.hash(dto.password, 10);
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: updateData,
+  async findByPhone(phone: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { phone },
       select: {
         id: true,
         phone: true,
@@ -99,10 +139,232 @@ export class UsersService {
         role: true,
         image: true,
         createdAt: true,
+        mentorProfile: true,
       },
     });
 
-    return { user: updatedUser };
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    return { user };
+  }
+
+  async createAdmin(dto: CreateAdminDto) {
+    // Telefon band emasligini tekshirish
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
+
+    if (existingPhone) {
+      throw new ConflictException(
+        "Bu telefon raqam allaqachon ro'yxatdan o'tgan",
+      );
+    }
+
+    // Email band emasligini tekshirish
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail) {
+        throw new ConflictException("Bu email allaqachon ro'yxatdan o'tgan");
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const admin = await this.prisma.user.create({
+      data: {
+        phone: dto.phone,
+        fullName: dto.fullName,
+        password: hashedPassword,
+        email: dto.email,
+        role: UserRole.ADMIN,
+      },
+      select: {
+        id: true,
+        phone: true,
+        fullName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      message: 'Admin muvaffaqiyatli yaratildi',
+      user: admin,
+    };
+  }
+
+  async createMentor(dto: CreateMentorDto) {
+    // Telefon band emasligini tekshirish
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
+
+    if (existingPhone) {
+      throw new ConflictException(
+        "Bu telefon raqam allaqachon ro'yxatdan o'tgan",
+      );
+    }
+
+    // Email band emasligini tekshirish
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail) {
+        throw new ConflictException("Bu email allaqachon ro'yxatdan o'tgan");
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const mentor = await this.prisma.user.create({
+      data: {
+        phone: dto.phone,
+        fullName: dto.fullName,
+        password: hashedPassword,
+        email: dto.email,
+        role: UserRole.MENTOR,
+        mentorProfile: {
+          create: {
+            about: dto.about,
+            job: dto.job,
+            experience: dto.experience ? parseInt(dto.experience) : 0,
+            telegram: dto.telegram,
+          },
+        },
+      },
+      select: {
+        id: true,
+        phone: true,
+        fullName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        mentorProfile: true,
+      },
+    });
+
+    return {
+      message: 'Mentor muvaffaqiyatli yaratildi',
+      user: mentor,
+    };
+  }
+
+  async createAssistant(dto: CreateAssistantDto) {
+    // Telefon band emasligini tekshirish
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
+
+    if (existingPhone) {
+      throw new ConflictException(
+        "Bu telefon raqam allaqachon ro'yxatdan o'tgan",
+      );
+    }
+
+    // Email band emasligini tekshirish
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail) {
+        throw new ConflictException("Bu email allaqachon ro'yxatdan o'tgan");
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const assistant = await this.prisma.user.create({
+      data: {
+        phone: dto.phone,
+        fullName: dto.fullName,
+        password: hashedPassword,
+        email: dto.email,
+        role: UserRole.ASSISTANT,
+      },
+      select: {
+        id: true,
+        phone: true,
+        fullName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      message: 'Assistant muvaffaqiyatli yaratildi',
+      user: assistant,
+    };
+  }
+
+  async updateMentor(id: string, dto: UpdateMentorDto) {
+    const mentor = await this.prisma.user.findUnique({
+      where: { id, role: UserRole.MENTOR },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Mentor topilmadi');
+    }
+
+    // Email yangilansa tekshirish
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail && existingEmail.id !== id) {
+        throw new ConflictException("Bu email allaqachon ro'yxatdan o'tgan");
+      }
+    }
+
+    const updatedMentor = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.fullName && { fullName: dto.fullName }),
+        ...(dto.email && { email: dto.email }),
+        ...(dto.image && { image: dto.image }),
+        mentorProfile: {
+          upsert: {
+            create: {
+              about: dto.about,
+              job: dto.job,
+              experience: dto.experience ? parseInt(dto.experience) : 0,
+              telegram: dto.telegram,
+            },
+            update: {
+              ...(dto.about && { about: dto.about }),
+              ...(dto.job && { job: dto.job }),
+              ...(dto.experience && { experience: parseInt(dto.experience) }),
+              ...(dto.telegram && { telegram: dto.telegram }),
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        phone: true,
+        fullName: true,
+        email: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        mentorProfile: true,
+      },
+    });
+
+    return {
+      message: 'Mentor muvaffaqiyatli yangilandi',
+      user: updatedMentor,
+    };
   }
 
   async remove(id: string) {
@@ -117,37 +379,267 @@ export class UsersService {
     return { message: "Foydalanuvchi o'chirildi" };
   }
 
-  async updateRole(
-    userId: string,
-    newRole: UserRole,
-    currentUserRole: UserRole,
-  ) {
-    // Faqat ADMIN rol update qila oladi
-    if (currentUserRole !== UserRole.ADMIN) {
-      throw new ForbiddenException(
-        "Faqat admin foydalanuvchilar rolni o'zgartira oladi",
-      );
-    }
+  // ==================== Profile Methods ====================
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user) {
-      throw new NotFoundException('Foydalanuvchi topilmadi');
-    }
-
-    const updatedUser = await this.prisma.user.update({
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      data: { role: newRole },
       select: {
         id: true,
         email: true,
         phone: true,
         fullName: true,
+        image: true,
         role: true,
         createdAt: true,
       },
     });
 
-    return { user: updatedUser };
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    return { user };
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    imageFile?: Express.Multer.File,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    // Email yangilansa, uniqligi tekshirish
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail && existingEmail.id !== userId) {
+        throw new ConflictException("Bu email allaqachon ro'yxatdan o'tgan");
+      }
+    }
+
+    // Rasm yuklangan bo'lsa URL ga aylantirish
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      // TODO: Faylni storage ga yuklash va URL olish
+      // Hozircha base64 yoki fayl nomini saqlaymiz
+      imageUrl = `/uploads/profiles/${Date.now()}-${imageFile.originalname}`;
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.fullName && { fullName: dto.fullName }),
+        ...(imageUrl && { image: imageUrl }),
+        ...(dto.email && { email: dto.email }),
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        fullName: true,
+        image: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      message: 'Profil muvaffaqiyatli yangilandi',
+      user: updatedUser,
+    };
+  }
+
+  async getLastActivity(userId: string) {
+    const lastActivity = await this.prisma.lastActivity.findUnique({
+      where: { userId },
+    });
+
+    if (!lastActivity) {
+      return { lastActivityAt: null };
+    }
+
+    return { lastActivityAt: lastActivity.updatedAt };
+  }
+
+  async updateLastActivity(userId: string, dto: UpdateLastActivityDto) {
+    const lastActivity = await this.prisma.lastActivity.upsert({
+      where: { userId },
+      update: {
+        courseId: dto.courseId,
+        groupId: dto.groupId,
+        lessonId: dto.lessonId,
+        url: dto.url,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId,
+        courseId: dto.courseId,
+        groupId: dto.groupId,
+        lessonId: dto.lessonId,
+        url: dto.url,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      message: 'Faoliyat vaqti yangilandi',
+      lastActivityAt: lastActivity.updatedAt,
+    };
+  }
+
+  async updatePhone(userId: string, dto: UpdatePhoneDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    // OTP tekshirish
+    const otpRecord = await this.prisma.oTP.findFirst({
+      where: {
+        phone: dto.newPhone,
+        code: dto.otp,
+        type: OTPType.PHONE_CHANGE,
+        isUsed: false,
+        expiresAt: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    if (!otpRecord) {
+      throw new BadRequestException(
+        "Tasdiqlash kodi noto'g'ri yoki muddati o'tgan",
+      );
+    }
+
+    // Yangi telefon band emasligini tekshirish
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone: dto.newPhone },
+    });
+
+    if (existingPhone) {
+      throw new ConflictException(
+        "Bu telefon raqam allaqachon ro'yxatdan o'tgan",
+      );
+    }
+
+    // Telefon va OTP yangilash
+    const [updatedUser] = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { phone: dto.newPhone },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          fullName: true,
+          role: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.oTP.update({
+        where: { id: otpRecord.id },
+        data: { isUsed: true },
+      }),
+    ]);
+
+    return {
+      message: 'Telefon raqam muvaffaqiyatli yangilandi',
+      user: updatedUser,
+    };
+  }
+
+  async updatePassword(userId: string, dto: UpdatePasswordDto) {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('Parollar mos kelmadi');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    // Joriy parolni tekshirish
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException("Joriy parol noto'g'ri");
+    }
+
+    // Yangi parolni hash qilish
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { message: 'Parol muvaffaqiyatli yangilandi' };
+  }
+
+  async updateMentorProfile(userId: string, dto: UpdateMentorProfileDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    if (user.role !== UserRole.MENTOR) {
+      throw new ForbiddenException('Faqat mentor profili yangilashi mumkin');
+    }
+
+    const mentorProfile = await this.prisma.mentorProfile.upsert({
+      where: { userId },
+      update: {
+        ...(dto.about && { about: dto.about }),
+        ...(dto.job && { job: dto.job }),
+        ...(dto.experience !== undefined && { experience: dto.experience }),
+        ...(dto.telegram && { telegram: dto.telegram }),
+      },
+      create: {
+        userId,
+        about: dto.about || null,
+        job: dto.job || null,
+        experience: dto.experience || 0,
+        telegram: dto.telegram || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            fullName: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Mentor profili muvaffaqiyatli yangilandi',
+      mentorProfile,
+    };
   }
 }

@@ -1,9 +1,9 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/new-register.dto';
-import { NewLoginDto } from './dto/new-login.dto';
-import { NewResetPasswordDto } from './dto/new-reset-password.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @ApiTags('Authentication')
@@ -16,7 +16,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Tizimga kirish' })
   @ApiResponse({ status: 200, description: 'Muvaffaqiyatli kirish' })
   @ApiResponse({ status: 401, description: "Noto'g'ri ma'lumotlar" })
-  async login(@Body() dto: NewLoginDto) {
+  async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
@@ -39,7 +39,7 @@ export class AuthController {
     description: 'Telefon yoki email allaqachon mavjud',
   })
   async register(@Body() dto: RegisterDto) {
-    return this.authService.registerNew(dto);
+    return this.authService.register(dto);
   }
 
   @Post('refresh-token')
@@ -66,7 +66,7 @@ export class AuthController {
     description: "OTP noto'g'ri yoki muddati o'tgan",
   })
   @ApiResponse({ status: 404, description: 'Foydalanuvchi topilmadi' })
-  async resetPassword(@Body() dto: NewResetPasswordDto) {
-    return this.authService.resetPasswordNew(dto);
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }

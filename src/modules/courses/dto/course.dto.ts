@@ -12,39 +12,52 @@ import { CourseLevel, PaidVia } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateCourseDto {
-  @ApiProperty({ example: 'React JS Kursi' })
+  @ApiProperty({
+    description: 'Kurs nomi',
+    example: 'NestJS ultimate course for absolute beginners',
+  })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: "React JS asoslari va ilg'or mavzular" })
+  @ApiProperty({
+    description: 'Kurs haqida',
+    example: 'Best nodeJS back-end course ever!',
+  })
   @IsString()
   @IsNotEmpty()
   about: string;
 
-  @ApiProperty({ example: 500000 })
-  @IsNumber()
+  @ApiProperty({ description: 'Kurs narxi', example: '250000' })
+  @IsNotEmpty()
   @Type(() => Number)
   price: number;
 
-  @ApiProperty({ example: 'https://example.com/banner.jpg' })
-  @IsString()
-  @IsNotEmpty()
-  banner: string;
-
-  @ApiPropertyOptional({ example: 'https://example.com/intro.mp4' })
-  @IsString()
-  @IsOptional()
-  introVideo?: string;
-
-  @ApiProperty({ enum: CourseLevel })
+  @ApiProperty({ enum: CourseLevel, description: 'Kurs darajasi' })
   @IsEnum(CourseLevel)
   level: CourseLevel;
 
-  @ApiProperty({ example: 1 })
-  @IsInt()
-  @Type(() => Number)
+  @ApiProperty({
+    description: 'Kategoriya ID (UUID)',
+    example: 'uuid-category-id',
+  })
+  @IsString()
+  @IsNotEmpty()
   categoryId: string;
+
+  @ApiProperty({
+    description: 'Banner rasmi',
+    type: 'string',
+    format: 'binary',
+  })
+  banner?: Express.Multer.File;
+
+  @ApiPropertyOptional({
+    description: 'Intro video',
+    type: 'string',
+    format: 'binary',
+  })
+  introVideo?: Express.Multer.File;
 }
 
 export class UpdateCourseDto {
@@ -86,33 +99,53 @@ export class UpdateCourseDto {
 }
 
 export class QueryCourseDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ default: 0, description: 'Offset for pagination' })
   @IsOptional()
   @Type(() => Number)
-  categoryId: string;
+  offset?: number;
 
-  @ApiPropertyOptional({ enum: CourseLevel })
+  @ApiPropertyOptional({ default: 8, description: 'Limit for pagination' })
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+
+  @ApiPropertyOptional({ description: 'Search by name or description' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    enum: CourseLevel,
+    description: 'Course level filter',
+  })
   @IsEnum(CourseLevel)
   @IsOptional()
   level?: CourseLevel;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Category ID filter' })
+  @IsOptional()
+  @IsString()
+  category_id?: string;
+
+  @ApiPropertyOptional({ description: 'Mentor ID filter' })
+  @IsOptional()
+  @IsString()
+  mentor_id?: string;
+
+  @ApiPropertyOptional({ description: 'Minimum price filter' })
+  @IsOptional()
+  @Type(() => Number)
+  price_min?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum price filter' })
+  @IsOptional()
+  @Type(() => Number)
+  price_max?: number;
+
+  // Admin uchun
+  @ApiPropertyOptional({ description: 'Published filter (admin only)' })
   @IsOptional()
   published?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  search?: string;
-
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({ default: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
 }
 
 export class PurchaseCourseDto {
