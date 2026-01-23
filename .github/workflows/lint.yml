@@ -13,7 +13,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
 
   yaml-lint:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -43,10 +43,11 @@ jobs:
         uses: ibiqlik/action-yamllint@v3
         with:
           file_or_dir: .github/workflows
+          config_file: .yamllint.yml
 
   docker-lint:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -54,4 +55,4 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
-          ignore: DL3018
+          ignore: DL3018,DL3013

@@ -116,4 +116,38 @@ export class UsersService {
 
     return { message: "Foydalanuvchi o'chirildi" };
   }
+
+  async updateRole(
+    userId: string,
+    newRole: UserRole,
+    currentUserRole: UserRole,
+  ) {
+    // Faqat ADMIN rol update qila oladi
+    if (currentUserRole !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        "Faqat admin foydalanuvchilar rolni o'zgartira oladi",
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        fullName: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return { user: updatedUser };
+  }
 }

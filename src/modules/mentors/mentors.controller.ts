@@ -5,7 +5,8 @@ import {
   Put,
   Param,
   Body,
-  UseGuards} from '@nestjs/common';
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,

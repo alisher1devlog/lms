@@ -22,13 +22,13 @@ async function bootstrap() {
   // Global Exception Filter
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('LMS API')
     .setDescription('Learning Management System API dokumentatsiyasi')
     .setVersion('1.0')
     .addBearerAuth()
-    .addTag('Auth', 'Autentifikatsiya')
+    .addTag('Authentication', 'Authentication')
+    .addTag('Verification', 'Verification va OTP boshqaruvi')
     .addTag('Users', 'Foydalanuvchilar')
     .addTag('Mentors', 'Mentorlar')
     .addTag('Categories', 'Kategoriyalar')
@@ -49,7 +49,7 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 
-  console.log(`🚀 Server ishga tushdi: http://localhost:${port}`);
-  console.log(`📚 Swagger dokumentatsiyasi: http://localhost:${port}/api/docs`);
+  console.log(` Server ishga tushdi: http://localhost:${port}`);
+  console.log(` Swagger dokumentatsiyasi: http://localhost:${port}/api/docs`);
 }
 bootstrap();

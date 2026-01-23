@@ -2,11 +2,13 @@ import {
   Controller,
   Get,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
   Query,
-  UseGuards} from '@nestjs/common';
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -15,7 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { UpdateUserDto, QueryUserDto } from './dto';
+import { UpdateUserDto, QueryUserDto, UpdateUserRoleDto } from './dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';
@@ -62,5 +64,18 @@ export class UsersController {
   @ApiResponse({ status: 200, description: "Foydalanuvchi o'chirildi" })
   async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Patch(':id/role')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "Foydalanuvchi rolini o'zgartirish" })
+  @ApiResponse({ status: 200, description: "Rol o'zgartirildi" })
+  async updateRole(
+    @Param('id') userId: string,
+    @Body() dto: UpdateUserRoleDto,
+    @CurrentUser('role') currentUserRole: UserRole,
+  ) {
+    return this.usersService.updateRole(userId, dto.role, currentUserRole);
   }
 }

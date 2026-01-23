@@ -15,7 +15,7 @@ on:
 jobs:
   dependency-check:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +42,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-    
+
     permissions:
       actions: read
       contents: read
