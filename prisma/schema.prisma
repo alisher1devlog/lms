@@ -126,13 +126,13 @@ model Course {
   introVideo String?
   level      CourseLevel
   published  Boolean     @default(false)
-  categoryId String
+  categoryId String?
   mentorId   String
   updatedAt  DateTime?   @updatedAt
   createdAt  DateTime    @default(now())
 
   // Relations
-  category         CourseCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category         CourseCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   mentor           User              @relation("MentorCourses", fields: [mentorId], references: [id], onDelete: Cascade)
   assignedCourses  AssignedCourse[]
   purchasedCourses PurchasedCourse[]

@@ -3,8 +3,10 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadService } from '../../upload/upload.service';
 import {
   CreateCourseDto,
   UpdateCourseDto,
@@ -17,7 +19,10 @@ import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class CoursesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService,
+  ) {}
 
   async findAll(query: QueryCourseDto) {
     const {
@@ -28,8 +33,11 @@ export class CoursesService {
       price_min,
       price_max,
       offset = 0,
-      limit = 8,
+      limit = 10,
     } = query;
+
+    // limit 0 yoki undefined bo'lsa default 10 qilamiz
+    const takeLimit = +limit > 0 ? +limit : 10;
 
     const where: any = {
       published: true, // Public endpoint faqat published kurslarni ko'rsatadi
@@ -53,7 +61,7 @@ export class CoursesService {
     const courses = await this.prisma.course.findMany({
       where,
       skip: +offset,
-      take: +limit,
+      take: takeLimit,
       include: {
         category: true,
         mentor: {
@@ -221,7 +229,7 @@ export class CoursesService {
   }
 
   /**
-   * Barcha kurslar (ADMIN) - published/unpublished hammasi
+   * Barcha kurslar (ADMIN)
    */
   async findAllAdmin(query: QueryCourseDto) {
     const {
@@ -241,7 +249,7 @@ export class CoursesService {
     if (category_id) where.categoryId = category_id;
     if (mentor_id) where.mentorId = mentor_id;
     if (level) where.level = level;
-    if (published !== undefined) where.published = published === 'true';
+    if (published !== undefined) where.published = published;
     if (price_min !== undefined || price_max !== undefined) {
       where.price = {};
       if (price_min !== undefined) where.price.gte = price_min;
@@ -295,14 +303,50 @@ export class CoursesService {
     bannerFile?: Express.Multer.File,
     introVideoFile?: Express.Multer.File,
   ) {
-    // TODO: Fayllarni saqlash logikasi (S3, local storage va h.k.)
-    // Hozircha placeholder URL
-    const bannerUrl = bannerFile
-      ? `/uploads/courses/banners/${Date.now()}-${bannerFile.originalname}`
-      : 'https://placeholder.com/banner.jpg';
-    const introVideoUrl = introVideoFile
-      ? `/uploads/courses/videos/${Date.now()}-${introVideoFile.originalname}`
-      : undefined;
+    // Kategoriya mavjudligini tekshirish (agar berilgan bo'lsa)
+    if (dto.categoryId) {
+      const category = await this.prisma.courseCategory.findUnique({
+        where: { id: dto.categoryId },
+      });
+
+      if (!category) {
+        throw new BadRequestException('Kategoriya topilmadi');
+      }
+    }
+
+    // Mentor mavjudligini tekshirish
+    const mentor = await this.prisma.user.findUnique({
+      where: { id: mentorId },
+    });
+
+    if (
+      !mentor ||
+      (mentor.role !== UserRole.MENTOR && mentor.role !== UserRole.ADMIN)
+    ) {
+      throw new BadRequestException("Mentor topilmadi yoki ruxsat yo'q");
+    }
+
+    // Banner yuklash (majburiy)
+    if (!bannerFile) {
+      throw new BadRequestException('Banner rasmi majburiy');
+    }
+
+    const bannerResult = await this.uploadService.uploadImage(
+      bannerFile,
+      'banners',
+      'courses',
+    );
+
+    // Intro video yuklash (ixtiyoriy)
+    let introVideoUrl: string | undefined;
+    if (introVideoFile) {
+      const videoResult = await this.uploadService.uploadVideo(
+        introVideoFile,
+        'videos',
+        'courses',
+      );
+      introVideoUrl = videoResult.url;
+    }
 
     const course = await this.prisma.course.create({
       data: {
@@ -311,7 +355,7 @@ export class CoursesService {
         price: dto.price,
         level: dto.level,
         categoryId: dto.categoryId,
-        banner: bannerUrl,
+        banner: bannerResult.url,
         introVideo: introVideoUrl,
         mentorId,
       },
@@ -327,48 +371,6 @@ export class CoursesService {
     });
 
     return { course };
-  }
-
-  /**
-   * Kursni nashr qilish (ADMIN)
-   */
-  async publish(id: string) {
-    const course = await this.prisma.course.findUnique({ where: { id } });
-
-    if (!course) {
-      throw new NotFoundException('Kurs topilmadi');
-    }
-
-    const updatedCourse = await this.prisma.course.update({
-      where: { id },
-      data: { published: true },
-    });
-
-    return {
-      message: 'Kurs nashr qilindi',
-      course: updatedCourse,
-    };
-  }
-
-  /**
-   * Kursni nashrdan olish (ADMIN)
-   */
-  async unpublish(id: string) {
-    const course = await this.prisma.course.findUnique({ where: { id } });
-
-    if (!course) {
-      throw new NotFoundException('Kurs topilmadi');
-    }
-
-    const updatedCourse = await this.prisma.course.update({
-      where: { id },
-      data: { published: false },
-    });
-
-    return {
-      message: 'Kurs nashrdan olindi',
-      course: updatedCourse,
-    };
   }
 
   /**
@@ -454,6 +456,19 @@ export class CoursesService {
       throw new ForbiddenException("Bu kursni o'chirishga ruxsat yo'q");
     }
 
+    // Fayllarni DigitalOcean Spaces dan o'chirish
+    try {
+      if (course.banner) {
+        await this.uploadService.deleteFileByUrl(course.banner);
+      }
+      if (course.introVideo) {
+        await this.uploadService.deleteFileByUrl(course.introVideo);
+      }
+    } catch (error) {
+      // Fayl o'chirishda xatolik bo'lsa ham davom etamiz
+      console.error("Fayllarni o'chirishda xatolik:", error.message);
+    }
+
     await this.prisma.course.delete({ where: { id } });
 
     return { message: "Kurs o'chirildi" };
@@ -511,7 +526,7 @@ export class CoursesService {
   /**
    * Mentor kurslari (ADMIN)
    */
-  async getMentorCourses(mentorId: string) {
+  async getMentorCourses(mentorId: string, query: QueryCourseDto) {
     const mentor = await this.prisma.user.findUnique({
       where: { id: mentorId },
     });
@@ -520,22 +535,61 @@ export class CoursesService {
       throw new NotFoundException('Mentor topilmadi');
     }
 
-    const courses = await this.prisma.course.findMany({
-      where: { mentorId },
-      include: {
-        category: true,
-        _count: {
-          select: {
-            lessonGroups: true,
-            purchasedCourses: true,
-            assignedCourses: true,
+    const {
+      category_id,
+      level,
+      published,
+      search,
+      price_min,
+      price_max,
+      offset = 0,
+      limit = 10,
+    } = query;
+
+    const where: any = { mentorId };
+
+    if (category_id) where.categoryId = category_id;
+    if (level) where.level = level;
+    if (published !== undefined) where.published = published;
+    if (price_min !== undefined || price_max !== undefined) {
+      where.price = {};
+      if (price_min !== undefined) where.price.gte = price_min;
+      if (price_max !== undefined) where.price.lte = price_max;
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { about: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [courses, total] = await Promise.all([
+      this.prisma.course.findMany({
+        where,
+        skip: +offset,
+        take: +limit,
+        include: {
+          category: true,
+          _count: {
+            select: {
+              lessonGroups: true,
+              purchasedCourses: true,
+              assignedCourses: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.course.count({ where }),
+    ]);
 
-    return { courses, mentor: { id: mentor.id, fullName: mentor.fullName } };
+    return {
+      courses,
+      mentor: { id: mentor.id, fullName: mentor.fullName },
+      total,
+      offset: +offset,
+      limit: +limit,
+    };
   }
 
   /**

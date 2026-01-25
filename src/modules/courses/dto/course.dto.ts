@@ -91,11 +91,6 @@ export class UpdateCourseDto {
   @IsEnum(CourseLevel)
   @IsOptional()
   level?: CourseLevel;
-
-  @ApiPropertyOptional({ example: true })
-  @IsBoolean()
-  @IsOptional()
-  published?: boolean;
 }
 
 export class QueryCourseDto {
@@ -142,10 +137,11 @@ export class QueryCourseDto {
   @Type(() => Number)
   price_max?: number;
 
-  // Admin uchun
   @ApiPropertyOptional({ description: 'Published filter (admin only)' })
   @IsOptional()
-  published?: string;
+  @IsBoolean()
+  @Type(() => Boolean)
+  published?: boolean;
 }
 
 export class PurchaseCourseDto {
