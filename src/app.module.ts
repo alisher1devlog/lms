@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { SmsModule } from './sms/sms.module';
+import { UploadModule } from './upload/upload.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { MentorsModule } from './modules/mentors/mentors.module';
@@ -26,6 +27,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     PrismaModule,
     RedisModule,
     SmsModule,
+    UploadModule,
     AuthModule,
     UsersModule,
     MentorsModule,

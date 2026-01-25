@@ -71,7 +71,7 @@ export class CoursesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Admin' })
+  @ApiOperation({ summary: 'Admin - Barcha kurslar' })
   @ApiResponse({ status: 200, description: "Barcha kurslar ro'yxati" })
   async findAllAdmin(@Query() query: QueryCourseDto) {
     return this.coursesService.findAllAdmin(query);
@@ -94,10 +94,13 @@ export class CoursesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Admin' })
+  @ApiOperation({ summary: 'Admin - Mentor kurslari' })
   @ApiResponse({ status: 200, description: 'Mentor kurslari' })
-  async getMentorCourses(@Param('id') mentorId: string) {
-    return this.coursesService.getMentorCourses(mentorId);
+  async getMentorCourses(
+    @Param('id') mentorId: string,
+    @Query() query: QueryCourseDto,
+  ) {
+    return this.coursesService.getMentorCourses(mentorId, query);
   }
 
   @Get('my/assigned')
@@ -177,9 +180,15 @@ export class CoursesController {
         price: { type: 'string', example: 'Narx yozish kerak' },
         level: {
           type: 'string',
-          enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'],
+          enum: [
+            'BEGINNER',
+            'PRE_INTERMEDIATE',
+            'INTERMEDIATE',
+            'UPPER_INTERMEDIATE',
+            'ADVANCED',
+          ],
         },
-        categoryId: { type: 'string', example: '2' },
+        categoryId: { type: 'string', example: 'uuid-category-id' },
         banner: { type: 'string', format: 'binary' },
         introVideo: { type: 'string', format: 'binary' },
       },
@@ -216,26 +225,6 @@ export class CoursesController {
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.coursesService.update(id, dto, userId, userRole);
-  }
-
-  @Post('publish/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Kursni nashr qilish' })
-  @ApiResponse({ status: 200, description: 'Kurs nashr qilindi' })
-  async publish(@Param('id') id: string) {
-    return this.coursesService.publish(id);
-  }
-
-  @Post('unpublish/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Kursni nashrdan olish' })
-  @ApiResponse({ status: 200, description: 'Kurs nashrdan olindi' })
-  async unpublish(@Param('id') id: string) {
-    return this.coursesService.unpublish(id);
   }
 
   @Patch('update-mentor')
