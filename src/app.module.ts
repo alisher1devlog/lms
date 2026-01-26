@@ -6,18 +6,20 @@ import { SmsModule } from './sms/sms.module';
 import { UploadModule } from './upload/upload.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
-import { MentorsModule } from './modules/mentors/mentors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { LessonGroupsModule } from './modules/lesson-groups/lesson-groups.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
+import { LessonFilesModule } from './modules/lesson-files/lesson-files.module';
 import { HomeworkModule } from './modules/homework/homework.module';
 import { ExamsModule } from './modules/exams/exams.module';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { RatingsModule } from './modules/ratings/ratings.module';
-import { ActivityModule } from './modules/activity/activity.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { PurchasedCoursesModule } from './modules/purchased-courses/purchased-courses.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { ContactModule } from './modules/contact/contact.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -30,18 +32,20 @@ import { VerificationModule } from './modules/verification/verification.module';
     UploadModule,
     AuthModule,
     UsersModule,
-    MentorsModule,
     CategoriesModule,
     CoursesModule,
     LessonGroupsModule,
     LessonsModule,
+    LessonFilesModule,
     HomeworkModule,
     ExamsModule,
     QuestionsModule,
     RatingsModule,
-    ActivityModule,
-    DashboardModule,
     VerificationModule,
+    PurchasedCoursesModule,
+    PaymentModule,
+    ContactModule,
+    FilesModule,
   ],
   controllers: [],
   providers: [],

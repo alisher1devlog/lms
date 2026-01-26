@@ -11,6 +11,8 @@ import {
   CreateCourseDto,
   UpdateCourseDto,
   QueryCourseDto,
+  QueryAssignedCourseDto,
+  PaginationDto,
   AssignAssistantDto,
   UnassignAssistantDto,
   UpdateCourseMentorDto,
@@ -413,6 +415,8 @@ export class CoursesService {
     dto: UpdateCourseDto,
     userId: string,
     userRole: UserRole,
+    bannerFile?: Express.Multer.File,
+    introVideoFile?: Express.Multer.File,
   ) {
     const course = await this.prisma.course.findUnique({ where: { id } });
 
@@ -424,9 +428,47 @@ export class CoursesService {
       throw new ForbiddenException("Bu kursni o'zgartirishga ruxsat yo'q");
     }
 
+    const updateData: any = { ...dto };
+
+    // Banner yuklash (ixtiyoriy)
+    if (bannerFile) {
+      // Eski bannerni o'chirish
+      if (course.banner) {
+        try {
+          await this.uploadService.deleteFileByUrl(course.banner);
+        } catch (error) {
+          console.error("Eski bannerni o'chirishda xatolik:", error.message);
+        }
+      }
+      const bannerResult = await this.uploadService.uploadImage(
+        bannerFile,
+        'banners',
+        'courses',
+      );
+      updateData.banner = bannerResult.url;
+    }
+
+    // Intro video yuklash (ixtiyoriy)
+    if (introVideoFile) {
+      // Eski videoni o'chirish
+      if (course.introVideo) {
+        try {
+          await this.uploadService.deleteFileByUrl(course.introVideo);
+        } catch (error) {
+          console.error("Eski videoni o'chirishda xatolik:", error.message);
+        }
+      }
+      const videoResult = await this.uploadService.uploadVideo(
+        introVideoFile,
+        'videos',
+        'courses',
+      );
+      updateData.introVideo = videoResult.url;
+    }
+
     const updatedCourse = await this.prisma.course.update({
       where: { id },
-      data: dto,
+      data: updateData,
       include: {
         category: true,
         mentor: {
@@ -470,53 +512,114 @@ export class CoursesService {
     return { message: "Kurs o'chirildi" };
   }
 
-  async getMyCourses(userId: string, userRole: UserRole) {
+  async getMyCourses(
+    userId: string,
+    userRole: UserRole,
+    query: QueryCourseDto,
+  ) {
+    const {
+      category_id,
+      mentor_id,
+      level,
+      search,
+      price_min,
+      price_max,
+      offset = 0,
+      limit = 8,
+      published,
+    } = query;
+
+    // Base where clause
+    const where: any = {};
+
+    if (category_id) where.categoryId = category_id;
+    if (level) where.level = level;
+    if (price_min !== undefined || price_max !== undefined) {
+      where.price = {};
+      if (price_min !== undefined) where.price.gte = +price_min;
+      if (price_max !== undefined) where.price.lte = +price_max;
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { about: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (published !== undefined) {
+      where.published = published;
+    }
+
     // Mentor o'z kurslarini ko'radi
     if (userRole === UserRole.MENTOR) {
-      const courses = await this.prisma.course.findMany({
-        where: { mentorId: userId },
-        include: {
-          category: true,
-          _count: {
-            select: {
-              lessonGroups: true,
-              purchasedCourses: true,
-              assignedCourses: true,
+      where.mentorId = userId;
+
+      const [courses, total] = await Promise.all([
+        this.prisma.course.findMany({
+          where,
+          skip: +offset,
+          take: +limit,
+          include: {
+            category: true,
+            _count: {
+              select: {
+                lessonGroups: true,
+                purchasedCourses: true,
+                assignedCourses: true,
+              },
             },
           },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.course.count({ where }),
+      ]);
 
-      return { courses };
+      return {
+        courses,
+        total,
+        offset: +offset,
+        limit: +limit,
+      };
     }
 
-    // Admin barcha kurslarni ko'radi
+    // Admin barcha kurslarni ko'radi (yoki mentor_id bo'yicha filter)
     if (userRole === UserRole.ADMIN) {
-      const courses = await this.prisma.course.findMany({
-        include: {
-          category: true,
-          mentor: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-          _count: {
-            select: {
-              lessonGroups: true,
-              purchasedCourses: true,
-              assignedCourses: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      if (mentor_id) where.mentorId = mentor_id;
 
-      return { courses };
+      const [courses, total] = await Promise.all([
+        this.prisma.course.findMany({
+          where,
+          skip: +offset,
+          take: +limit,
+          include: {
+            category: true,
+            mentor: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+            _count: {
+              select: {
+                lessonGroups: true,
+                purchasedCourses: true,
+                assignedCourses: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.course.count({ where }),
+      ]);
+
+      return {
+        courses,
+        total,
+        offset: +offset,
+        limit: +limit,
+      };
     }
 
-    return { courses: [] };
+    return { courses: [], total: 0, offset: 0, limit: +limit };
   }
 
   /**
@@ -589,37 +692,70 @@ export class CoursesService {
   /**
    * Assistant biriktirilgan kurslar (ASSISTANT)
    */
-  async getAssignedCourses(userId: string) {
-    const assignments = await this.prisma.assignedCourse.findMany({
-      where: { userId },
-      include: {
-        course: {
-          include: {
-            category: true,
-            mentor: {
-              select: {
-                id: true,
-                fullName: true,
-                image: true,
+  async getAssignedCourses(userId: string, query: QueryAssignedCourseDto) {
+    const { category_id, level, search, offset = 0, limit = 8 } = query;
+
+    // Course filter conditions
+    const courseWhere: any = {};
+
+    if (category_id) courseWhere.categoryId = category_id;
+    if (level) courseWhere.level = level;
+    if (search) {
+      courseWhere.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { about: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [assignments, total] = await Promise.all([
+      this.prisma.assignedCourse.findMany({
+        where: {
+          userId,
+          course: courseWhere,
+        },
+        skip: +offset,
+        take: +limit,
+        include: {
+          course: {
+            include: {
+              category: true,
+              mentor: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  image: true,
+                },
               },
-            },
-            _count: {
-              select: {
-                lessonGroups: true,
-                purchasedCourses: true,
+              _count: {
+                select: {
+                  lessonGroups: true,
+                  purchasedCourses: true,
+                },
               },
             },
           },
         },
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.assignedCourse.count({
+        where: {
+          userId,
+          course: courseWhere,
+        },
+      }),
+    ]);
 
     const courses = assignments.map((a) => ({
       ...a.course,
       assignedAt: a.createdAt,
     }));
 
-    return { courses };
+    return {
+      courses,
+      total,
+      offset: +offset,
+      limit: +limit,
+    };
   }
 
   /**
@@ -629,7 +765,10 @@ export class CoursesService {
     courseId: string,
     userId: string,
     userRole: UserRole,
+    query: PaginationDto,
   ) {
+    const { offset = 0, limit = 8 } = query;
+
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -643,31 +782,44 @@ export class CoursesService {
       throw new ForbiddenException("Bu kursga ruxsat yo'q");
     }
 
-    const assignments = await this.prisma.assignedCourse.findMany({
-      where: {
-        courseId,
-        user: {
-          role: UserRole.ASSISTANT,
-        },
+    const where = {
+      courseId,
+      user: {
+        role: UserRole.ASSISTANT,
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            image: true,
+    };
+
+    const [assignments, total] = await Promise.all([
+      this.prisma.assignedCourse.findMany({
+        where,
+        skip: +offset,
+        take: +limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              image: true,
+            },
           },
         },
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.assignedCourse.count({ where }),
+    ]);
 
     const assistants = assignments.map((a) => ({
       ...a.user,
       assignedAt: a.createdAt,
     }));
 
-    return { assistants };
+    return {
+      assistants,
+      total,
+      offset: +offset,
+      limit: +limit,
+    };
   }
 
   /**

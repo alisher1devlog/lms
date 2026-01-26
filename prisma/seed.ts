@@ -18,7 +18,7 @@ async function main() {
   });
 
   if (existingAdmin) {
-    console.log('✅ Super Admin allaqachon mavjud');
+    console.log(' Super Admin allaqachon mavjud');
   } else {
     const superAdmin = await prisma.user.create({
       data: {

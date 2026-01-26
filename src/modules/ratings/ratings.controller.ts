@@ -15,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { RatingsService } from './ratings.service';
 import { CreateRatingDto, UpdateRatingDto } from './dto';
@@ -22,61 +23,62 @@ import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';
 
-@ApiTags('Ratings')
-@Controller('api')
+@ApiTags('Course Rating')
+@Controller('api/course-rating')
 export class RatingsController {
   constructor(private ratingsService: RatingsService) {}
 
-  @Post('courses/:courseId/ratings')
+  @Get('latest')
+  @ApiOperation({ summary: 'Eng yangi baholar' })
+  @ApiResponse({ status: 200, description: 'Eng yangi baholar' })
+  async getLatestRatings() {
+    return this.ratingsService.getLatestRatings();
+  }
+
+  @Get('list/:course_id')
+  @ApiOperation({ summary: 'Kurs baholari' })
+  @ApiQuery({ name: 'offset', required: false, example: 0 })
+  @ApiQuery({ name: 'limit', required: false, example: 8 })
+  @ApiResponse({ status: 200, description: "Baholar ro'yxati" })
+  async getRatingsByCourse(
+    @Param('course_id') courseId: string,
+    @Query('offset') offset?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.ratingsService.getRatingsByCourse(
+      courseId,
+      offset ? parseInt(offset) : 0,
+      limit ? parseInt(limit) : 8,
+    );
+  }
+
+  @Get('analytics/:course_id')
+  @ApiOperation({ summary: 'Kurs baho analitikasi' })
+  @ApiResponse({ status: 200, description: 'Baho analitikasi' })
+  async getRatingAnalytics(@Param('course_id') courseId: string) {
+    return this.ratingsService.getRatingAnalytics(courseId);
+  }
+
+  @Post()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.STUDENT)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Kursga baho berish' })
+  @ApiOperation({ summary: 'Kursga baho berish, STUDENT' })
   @ApiResponse({ status: 201, description: 'Baho berildi' })
   async createRating(
-    @Param('courseId') courseId: string,
     @Body() dto: CreateRatingDto,
     @CurrentUser('id') userId: string,
   ) {
-    return this.ratingsService.createRating(courseId, dto, userId);
+    return this.ratingsService.createRating(dto, userId);
   }
 
-  @Get('courses/:courseId/ratings')
-  @ApiOperation({ summary: 'Kurs baholari' })
-  @ApiResponse({ status: 200, description: "Baholar ro'yxati" })
-  async getRatingsByCourse(
-    @Param('courseId') courseId: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 10;
-    return this.ratingsService.getRatingsByCourse(courseId, pageNum, limitNum);
-  }
-
-  @Put('ratings/:id')
-  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Bahoni yangilash' })
-  @ApiResponse({ status: 200, description: 'Baho yangilandi' })
-  async updateRating(
-    @Param('id') id: string,
-    @Body() dto: UpdateRatingDto,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.ratingsService.updateRating(id, dto, userId);
-  }
-
-  @Delete('ratings/:id')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Bahoni o'chirish" })
+  @ApiOperation({ summary: "Bahoni o'chirish, ADMIN" })
   @ApiResponse({ status: 200, description: "Baho o'chirildi" })
-  async deleteRating(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') userRole: UserRole,
-  ) {
-    return this.ratingsService.deleteRating(id, userId, userRole);
+  async deleteRating(@Param('id') id: string) {
+    return this.ratingsService.deleteRating(id);
   }
 }

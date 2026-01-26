@@ -4,66 +4,22 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  CreateLessonDto,
-  UpdateLessonDto,
-  CreateLessonFileDto,
-  LessonViewDto,
-} from './dto';
+import { UploadService } from '../../upload/upload.service';
+import { CreateLessonDto, UpdateLessonDto, LessonViewDto } from './dto';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class LessonsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService,
+  ) {}
 
-  async findAllByGroup(groupId: string, userId: string) {
-    const group = await this.prisma.lessonGroup.findUnique({
-      where: { id: groupId },
-      include: { course: true },
-    });
+  // ===================== STUDENT METHODS =====================
 
-    if (!group) {
-      throw new NotFoundException("Bo'lim topilmadi");
-    }
-
-    // Check access
-    const hasAccess = await this.hasAccessToCourse(userId, group.courseId);
-    if (!hasAccess) {
-      throw new ForbiddenException("Bu kursga kirish huquqi yo'q");
-    }
-
-    const lessons = await this.prisma.lesson.findMany({
-      where: { groupId },
-      include: {
-        lessonViews: {
-          where: { userId },
-        },
-        homework: {
-          select: {
-            id: true,
-            task: true,
-          },
-        },
-        _count: {
-          select: {
-            lessonFiles: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    return {
-      lessons: lessons.map((lesson) => ({
-        ...lesson,
-        viewed: lesson.lessonViews.length > 0 && lesson.lessonViews[0].view,
-      })),
-    };
-  }
-
-  async findOne(id: string, userId: string) {
+  async getSingleLesson(lessonId: string, userId: string) {
     const lesson = await this.prisma.lesson.findUnique({
-      where: { id },
+      where: { id: lessonId },
       include: {
         group: {
           include: { course: true },
@@ -80,11 +36,12 @@ export class LessonsService {
       throw new NotFoundException('Dars topilmadi');
     }
 
-    const hasAccess = await this.hasAccessToCourse(
-      userId,
-      lesson.group.courseId,
-    );
-    if (!hasAccess) {
+    // Student faqat sotib olgan kurslarni ko'ra oladi
+    const purchased = await this.prisma.purchasedCourse.findFirst({
+      where: { userId, courseId: lesson.group.courseId },
+    });
+
+    if (!purchased) {
       throw new ForbiddenException("Bu darsga kirish huquqi yo'q");
     }
 
@@ -98,14 +55,93 @@ export class LessonsService {
     };
   }
 
+  async markAsViewed(lessonId: string, dto: LessonViewDto, userId: string) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        group: {
+          include: { course: true },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Dars topilmadi');
+    }
+
+    // Student faqat sotib olgan kurslarni belgilay oladi
+    const purchased = await this.prisma.purchasedCourse.findFirst({
+      where: { userId, courseId: lesson.group.courseId },
+    });
+
+    if (!purchased) {
+      throw new ForbiddenException("Bu darsga kirish huquqi yo'q");
+    }
+
+    const lessonView = await this.prisma.lessonView.upsert({
+      where: {
+        lessonId_userId: {
+          lessonId,
+          userId,
+        },
+      },
+      update: { view: dto.view },
+      create: {
+        lessonId,
+        userId,
+        view: dto.view,
+      },
+    });
+
+    return { lessonView };
+  }
+
+  // ===================== ADMIN & MENTOR METHODS =====================
+
+  async getLessonDetail(id: string, userId: string, userRole: UserRole) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id },
+      include: {
+        group: {
+          include: { course: true },
+        },
+        lessonFiles: true,
+        homework: true,
+        _count: {
+          select: {
+            lessonViews: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Dars topilmadi');
+    }
+
+    // MENTOR faqat o'z kurslariga kirish huquqiga ega
+    if (
+      userRole !== UserRole.ADMIN &&
+      lesson.group.course.mentorId !== userId
+    ) {
+      throw new ForbiddenException("Bu darsga kirish huquqi yo'q");
+    }
+
+    return {
+      lesson,
+      files: lesson.lessonFiles,
+      homework: lesson.homework,
+    };
+  }
+
   async create(
-    groupId: string,
     dto: CreateLessonDto,
+    videoFile: Express.Multer.File,
     userId: string,
     userRole: UserRole,
   ) {
     const group = await this.prisma.lessonGroup.findUnique({
-      where: { id: groupId },
+      where: { id: dto.groupId },
       include: { course: true },
     });
 
@@ -117,10 +153,21 @@ export class LessonsService {
       throw new ForbiddenException("Bu bo'limga dars qo'shishga ruxsat yo'q");
     }
 
+    // Video URL ni aniqlash
+    let videoUrl = dto.videoUrl || null;
+
+    // Agar video fayl yuklangan bo'lsa
+    if (videoFile) {
+      const uploaded = await this.uploadService.uploadFile(videoFile, 'videos');
+      videoUrl = uploaded.url;
+    }
+
     const lesson = await this.prisma.lesson.create({
       data: {
-        ...dto,
-        groupId,
+        name: dto.name,
+        about: dto.about,
+        video: videoUrl,
+        groupId: dto.groupId,
       },
     });
 
@@ -130,6 +177,7 @@ export class LessonsService {
   async update(
     id: string,
     dto: UpdateLessonDto,
+    videoFile: Express.Multer.File,
     userId: string,
     userRole: UserRole,
   ) {
@@ -153,9 +201,25 @@ export class LessonsService {
       throw new ForbiddenException("Bu darsni o'zgartirishga ruxsat yo'q");
     }
 
+    // Video URL ni aniqlash - fayl ustuvorlikda
+    let videoUrl: string | undefined = undefined;
+
+    // Agar video fayl yuklangan bo'lsa - fayl ustuvorlik oladi
+    if (videoFile) {
+      const uploaded = await this.uploadService.uploadFile(videoFile, 'videos');
+      videoUrl = uploaded.url;
+    } else if (dto.videoUrl) {
+      // Fayl yo'q bo'lsa, videoUrl ishlatiladi
+      videoUrl = dto.videoUrl;
+    }
+
     const updatedLesson = await this.prisma.lesson.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.about && { about: dto.about }),
+        ...(videoUrl && { video: videoUrl }),
+      },
     });
 
     return { lesson: updatedLesson };
@@ -185,170 +249,5 @@ export class LessonsService {
     await this.prisma.lesson.delete({ where: { id } });
 
     return { message: "Dars o'chirildi" };
-  }
-
-  async markAsViewed(id: string, userId: string, dto: LessonViewDto) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id },
-      include: {
-        group: {
-          include: { course: true },
-        },
-      },
-    });
-
-    if (!lesson) {
-      throw new NotFoundException('Dars topilmadi');
-    }
-
-    const hasAccess = await this.hasAccessToCourse(
-      userId,
-      lesson.group.courseId,
-    );
-    if (!hasAccess) {
-      throw new ForbiddenException("Bu darsga kirish huquqi yo'q");
-    }
-
-    const lessonView = await this.prisma.lessonView.upsert({
-      where: {
-        lessonId_userId: {
-          lessonId: id,
-          userId,
-        },
-      },
-      update: { view: dto.view },
-      create: {
-        lessonId: id,
-        userId,
-        view: dto.view,
-      },
-    });
-
-    return { lessonView };
-  }
-
-  // Lesson Files
-  async getFiles(lessonId: string, userId: string) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: {
-        group: {
-          include: { course: true },
-        },
-      },
-    });
-
-    if (!lesson) {
-      throw new NotFoundException('Dars topilmadi');
-    }
-
-    const hasAccess = await this.hasAccessToCourse(
-      userId,
-      lesson.group.courseId,
-    );
-    if (!hasAccess) {
-      throw new ForbiddenException("Bu darsga kirish huquqi yo'q");
-    }
-
-    const files = await this.prisma.lessonFile.findMany({
-      where: { lessonId },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return { files };
-  }
-
-  async addFile(
-    lessonId: string,
-    dto: CreateLessonFileDto,
-    userId: string,
-    userRole: UserRole,
-  ) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: {
-        group: {
-          include: { course: true },
-        },
-      },
-    });
-
-    if (!lesson) {
-      throw new NotFoundException('Dars topilmadi');
-    }
-
-    if (
-      userRole !== UserRole.ADMIN &&
-      lesson.group.course.mentorId !== userId
-    ) {
-      throw new ForbiddenException("Bu darsga fayl qo'shishga ruxsat yo'q");
-    }
-
-    const file = await this.prisma.lessonFile.create({
-      data: {
-        ...dto,
-        lessonId,
-      },
-    });
-
-    return { file };
-  }
-
-  async removeFile(fileId: string, userId: string, userRole: UserRole) {
-    const file = await this.prisma.lessonFile.findUnique({
-      where: { id: fileId },
-      include: {
-        lesson: {
-          include: {
-            group: {
-              include: { course: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!file) {
-      throw new NotFoundException('Fayl topilmadi');
-    }
-
-    if (
-      userRole !== UserRole.ADMIN &&
-      file.lesson.group.course.mentorId !== userId
-    ) {
-      throw new ForbiddenException("Bu faylni o'chirishga ruxsat yo'q");
-    }
-
-    await this.prisma.lessonFile.delete({ where: { id: fileId } });
-
-    return { message: "Fayl o'chirildi" };
-  }
-
-  private async hasAccessToCourse(
-    userId: string,
-    courseId: string,
-  ): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (user?.role === UserRole.ADMIN || user?.role === UserRole.ASSISTANT) {
-      return true;
-    }
-
-    const [purchased, assigned, course] = await Promise.all([
-      this.prisma.purchasedCourse.findFirst({
-        where: { userId, courseId },
-      }),
-      this.prisma.assignedCourse.findFirst({
-        where: { userId, courseId },
-      }),
-      this.prisma.course.findUnique({
-        where: { id: courseId },
-        select: { mentorId: true },
-      }),
-    ]);
-
-    return !!(purchased || assigned || course?.mentorId === userId);
   }
 }

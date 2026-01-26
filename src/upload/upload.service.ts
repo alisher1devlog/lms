@@ -328,4 +328,12 @@ export class UploadService {
     if (lastDot === -1) return '';
     return filename.substring(lastDot).toLowerCase();
   }
+
+  /**
+   * Get full URL for a file
+   */
+  getFileUrl(category: FileCategory, filename: string): string {
+    const cdnEndpoint = this.endpoint.replace('https://', `https://${this.bucket}.`);
+    return `${cdnEndpoint}/${category}/${filename}`;
+  }
 }

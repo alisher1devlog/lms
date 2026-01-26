@@ -4,20 +4,112 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateLessonGroupDto, UpdateLessonGroupDto } from './dto';
+import {
+  CreateLessonGroupDto,
+  UpdateLessonGroupDto,
+  QueryLessonGroupDto,
+} from './dto';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class LessonGroupsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllByCourse(courseId: string) {
+  // ===================== PUBLIC METHODS =====================
+
+  async getAllByCourse(courseId: string, query: QueryLessonGroupDto) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
 
     if (!course) {
       throw new NotFoundException('Kurs topilmadi');
+    }
+
+    const offset = parseInt(query.offset || '0', 10);
+    const limit = parseInt(query.limit || '10', 10);
+    const includeLessons = query.include_lessons === true;
+
+    const [total, groups] = await Promise.all([
+      this.prisma.lessonGroup.count({ where: { courseId } }),
+      this.prisma.lessonGroup.findMany({
+        where: { courseId },
+        select: includeLessons
+          ? {
+              id: true,
+              name: true,
+              lessons: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+                orderBy: { createdAt: 'asc' },
+              },
+            }
+          : {
+              id: true,
+              name: true,
+            },
+        orderBy: { createdAt: 'asc' },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    return { total, data: groups };
+  }
+
+  async getDetail(id: string) {
+    const group = await this.prisma.lessonGroup.findUnique({
+      where: { id },
+      include: {
+        course: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        lessons: {
+          select: {
+            id: true,
+            name: true,
+            about: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        exams: {
+          select: {
+            id: true,
+            question: true,
+          },
+        },
+        _count: {
+          select: {
+            lessons: true,
+            exams: true,
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException("Bo'lim topilmadi");
+    }
+
+    return { group };
+  }
+
+  // ===================== STUDENT METHODS =====================
+
+  async getMineAllByCourse(courseId: string, userId: string) {
+    // Student kursni sotib olganmi tekshirish
+    const purchased = await this.prisma.purchasedCourse.findFirst({
+      where: { userId, courseId },
+    });
+
+    if (!purchased) {
+      throw new ForbiddenException("Bu kursga kirish huquqi yo'q");
     }
 
     const groups = await this.prisma.lessonGroup.findMany({
@@ -28,8 +120,14 @@ export class LessonGroupsService {
             id: true,
             name: true,
             about: true,
+            video: true,
             createdAt: true,
+            lessonViews: {
+              where: { userId },
+              select: { view: true },
+            },
           },
+          orderBy: { createdAt: 'asc' },
         },
         _count: {
           select: {
@@ -41,17 +139,24 @@ export class LessonGroupsService {
       orderBy: { createdAt: 'asc' },
     });
 
-    return { groups };
+    // Har bir darsga viewed field qo'shish
+    const groupsWithProgress = groups.map((group) => ({
+      ...group,
+      lessons: group.lessons.map((lesson) => ({
+        ...lesson,
+        viewed: lesson.lessonViews.length > 0 && lesson.lessonViews[0].view,
+        lessonViews: undefined,
+      })),
+    }));
+
+    return { groups: groupsWithProgress };
   }
 
-  async create(
-    courseId: string,
-    dto: CreateLessonGroupDto,
-    userId: string,
-    userRole: UserRole,
-  ) {
+  // ===================== MENTOR & ADMIN METHODS =====================
+
+  async create(dto: CreateLessonGroupDto, userId: string, userRole: UserRole) {
     const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: dto.courseId },
     });
 
     if (!course) {
@@ -64,8 +169,8 @@ export class LessonGroupsService {
 
     const group = await this.prisma.lessonGroup.create({
       data: {
-        ...dto,
-        courseId,
+        name: dto.name,
+        courseId: dto.courseId,
       },
     });
 
@@ -93,7 +198,7 @@ export class LessonGroupsService {
 
     const updatedGroup = await this.prisma.lessonGroup.update({
       where: { id },
-      data: dto,
+      data: { name: dto.name },
     });
 
     return { group: updatedGroup };
