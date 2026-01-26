@@ -26,6 +26,8 @@ import {
   CreateCourseDto,
   UpdateCourseDto,
   QueryCourseDto,
+  QueryAssignedCourseDto,
+  PaginationDto,
   AssignAssistantDto,
   UnassignAssistantDto,
   UpdateCourseMentorDto,
@@ -86,8 +88,9 @@ export class CoursesController {
   async getMyCourses(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
+    @Query() query: QueryCourseDto,
   ) {
-    return this.coursesService.getMyCourses(userId, userRole);
+    return this.coursesService.getMyCourses(userId, userRole, query);
   }
 
   @Get('mentor/:id')
@@ -109,29 +112,38 @@ export class CoursesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Assistant' })
   @ApiResponse({ status: 200, description: 'Biriktirilgan kurslar' })
-  async getMyAssignedCourses(@CurrentUser('id') userId: string) {
-    return this.coursesService.getAssignedCourses(userId);
+  async getMyAssignedCourses(
+    @CurrentUser('id') userId: string,
+    @Query() query: QueryAssignedCourseDto,
+  ) {
+    return this.coursesService.getAssignedCourses(userId, query);
   }
 
   @Get(':courseId/assistants')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Kurs assistantlari' })
+  @ApiOperation({ summary: 'Kurs assistantlari, Mentor and Admin' })
   @ApiResponse({ status: 200, description: "Assistantlar ro'yxati" })
   async getCourseAssistants(
     @Param('courseId') courseId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
+    @Query() query: PaginationDto,
   ) {
-    return this.coursesService.getCourseAssistants(courseId, userId, userRole);
+    return this.coursesService.getCourseAssistants(
+      courseId,
+      userId,
+      userRole,
+      query,
+    );
   }
 
   @Post('assign-assistant')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Assistantni kursga biriktirish' })
+  @ApiOperation({ summary: 'Assistantni kursga biriktirish, MENTOR, ADMIN' })
   @ApiResponse({ status: 201, description: 'Assistant biriktirildi' })
   async assignAssistant(
     @Body() dto: AssignAssistantDto,
@@ -145,7 +157,7 @@ export class CoursesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Assistantni kursdan chiqarish' })
+  @ApiOperation({ summary: 'Assistantni kursdan chiqarish, MENTOR, ADMIN' })
   @ApiResponse({ status: 200, description: 'Assistant chiqarildi' })
   async unassignAssistant(
     @Body() dto: UnassignAssistantDto,
@@ -166,7 +178,7 @@ export class CoursesController {
     ]),
   )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Yangi kurs yaratish' })
+  @ApiOperation({ summary: 'Yangi kurs yaratish, ADMIN, MENTOR' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -216,22 +228,64 @@ export class CoursesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Kursni yangilash' })
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'banner', maxCount: 1 },
+      { name: 'introVideo', maxCount: 1 },
+    ]),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Kursni yangilash, Admin and Mentor' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        about: { type: 'string' },
+        price: { type: 'number' },
+        level: {
+          type: 'string',
+          enum: [
+            'BEGINNER',
+            'PRE_INTERMEDIATE',
+            'INTERMEDIATE',
+            'UPPER_INTERMEDIATE',
+            'ADVANCED',
+          ],
+        },
+        categoryId: { type: 'string' },
+        banner: { type: 'string', format: 'binary' },
+        introVideo: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: 'Kurs yangilandi' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateCourseDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
+    @UploadedFiles()
+    files: {
+      banner?: Express.Multer.File[];
+      introVideo?: Express.Multer.File[];
+    },
   ) {
-    return this.coursesService.update(id, dto, userId, userRole);
+    return this.coursesService.update(
+      id,
+      dto,
+      userId,
+      userRole,
+      files?.banner?.[0],
+      files?.introVideo?.[0],
+    );
   }
 
   @Patch('update-mentor')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Kurs mentorini almashtirish' })
+  @ApiOperation({ summary: 'Kurs mentorini almashtirish, ADMIN' })
   @ApiResponse({ status: 200, description: 'Mentor almashtirildi' })
   async updateMentor(@Body() dto: UpdateCourseMentorDto) {
     return this.coursesService.updateMentor(dto);
@@ -241,7 +295,7 @@ export class CoursesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Kursni o'chirish" })
+  @ApiOperation({ summary: "Kursni o'chirish, ADMIN, MENTOR" })
   @ApiResponse({ status: 200, description: "Kurs o'chirildi" })
   async remove(
     @Param('id') id: string,

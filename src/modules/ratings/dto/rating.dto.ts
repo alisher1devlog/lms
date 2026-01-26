@@ -9,6 +9,11 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRatingDto {
+  @ApiProperty({ description: 'Kurs ID' })
+  @IsString()
+  @IsNotEmpty()
+  courseId: string;
+
   @ApiProperty({ example: 5, minimum: 1, maximum: 5 })
   @IsInt()
   @Min(1)

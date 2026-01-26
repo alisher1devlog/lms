@@ -12,10 +12,23 @@ export class CreateLessonDto {
   @IsNotEmpty()
   about: string;
 
-  @ApiProperty({ example: 'https://example.com/video.mp4' })
+  @ApiProperty({ example: 'group-uuid-here', description: "Bo'lim ID" })
   @IsString()
   @IsNotEmpty()
-  video: string;
+  groupId: string;
+
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'binary',
+    description: 'Video fayl',
+  })
+  @IsOptional()
+  video?: any;
+
+  @ApiPropertyOptional({ example: 'https://example.com/video.mp4' })
+  @IsString()
+  @IsOptional()
+  videoUrl?: string;
 }
 
 export class UpdateLessonDto {
@@ -31,22 +44,18 @@ export class UpdateLessonDto {
   @IsOptional()
   about?: string;
 
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'binary',
+    description: 'Video fayl',
+  })
+  @IsOptional()
+  video?: any;
+
   @ApiPropertyOptional({ example: 'https://example.com/video.mp4' })
   @IsString()
   @IsOptional()
-  video?: string;
-}
-
-export class CreateLessonFileDto {
-  @ApiProperty({ example: 'https://example.com/file.pdf' })
-  @IsString()
-  @IsNotEmpty()
-  file: string;
-
-  @ApiPropertyOptional({ example: "Qo'shimcha material" })
-  @IsString()
-  @IsOptional()
-  note?: string;
+  videoUrl?: string;
 }
 
 export class LessonViewDto {

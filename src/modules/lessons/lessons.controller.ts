@@ -3,90 +3,115 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { LessonsService } from './lessons.service';
-import {
-  CreateLessonDto,
-  UpdateLessonDto,
-  CreateLessonFileDto,
-  LessonViewDto,
-} from './dto';
+import { CreateLessonDto, UpdateLessonDto, LessonViewDto } from './dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Lessons')
-@Controller('api')
+@Controller('api/lessons')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
 export class LessonsController {
   constructor(private lessonsService: LessonsService) {}
 
-  @Get('groups/:groupId/lessons')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Bo'lim darslari" })
-  @ApiResponse({ status: 200, description: "Darslar ro'yxati" })
-  async findAllByGroup(
-    @Param('groupId') groupId: string,
+  // ===================== STUDENT ENDPOINTS =====================
+
+  @Get('single/:lessonId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.STUDENT)
+  @ApiOperation({ summary: "Darsni ko'rish - STUDENT" })
+  @ApiResponse({ status: 200, description: "Dars ma'lumotlari" })
+  async getSingleLesson(
+    @Param('lessonId') lessonId: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.lessonsService.findAllByGroup(groupId, userId);
+    return this.lessonsService.getSingleLesson(lessonId, userId);
   }
 
-  @Get('lessons/:id')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Dars ma'lumotlari" })
-  @ApiResponse({ status: 200, description: "Dars ma'lumotlari" })
-  async findOne(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    return this.lessonsService.findOne(id, userId);
+  @Put('view/:lessonId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.STUDENT)
+  @ApiOperation({ summary: "Darsni ko'rilgan deb belgilash - STUDENT" })
+  @ApiResponse({ status: 200, description: 'Dars belgilandi' })
+  async markAsViewed(
+    @Param('lessonId') lessonId: string,
+    @Body() dto: LessonViewDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.lessonsService.markAsViewed(lessonId, dto, userId);
   }
 
-  @Post('groups/:groupId/lessons')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  // ===================== ADMIN & MENTOR ENDPOINTS =====================
+
+  @Get('detail/:id')
+  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Yangi dars yaratish' })
-  @ApiResponse({ status: 201, description: 'Dars yaratildi' })
-  async create(
-    @Param('groupId') groupId: string,
-    @Body() dto: CreateLessonDto,
+  @ApiOperation({ summary: 'Dars tafsilotlari - ADMIN, MENTOR' })
+  @ApiResponse({ status: 200, description: "Dars ma'lumotlari" })
+  async getLessonDetail(
+    @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.lessonsService.create(groupId, dto, userId, userRole);
+    return this.lessonsService.getLessonDetail(id, userId, userRole);
   }
 
-  @Put('lessons/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Post('create')
+  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Darsni yangilash' })
+  @UseInterceptors(FileInterceptor('video'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Yangi dars yaratish - ADMIN, MENTOR' })
+  @ApiResponse({ status: 201, description: 'Dars yaratildi' })
+  async create(
+    @Body() dto: CreateLessonDto,
+    @UploadedFile() video: Express.Multer.File,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') userRole: UserRole,
+  ) {
+    return this.lessonsService.create(dto, video, userId, userRole);
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MENTOR)
+  @UseInterceptors(FileInterceptor('video'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Darsni yangilash - ADMIN, MENTOR' })
   @ApiResponse({ status: 200, description: 'Dars yangilandi' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateLessonDto,
+    @UploadedFile() video: Express.Multer.File,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.lessonsService.update(id, dto, userId, userRole);
+    return this.lessonsService.update(id, dto, video, userId, userRole);
   }
 
-  @Delete('lessons/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Delete(':id')
+  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Darsni o'chirish" })
+  @ApiOperation({ summary: "Darsni o'chirish - ADMIN, MENTOR" })
   @ApiResponse({ status: 200, description: "Dars o'chirildi" })
   async remove(
     @Param('id') id: string,
@@ -94,60 +119,5 @@ export class LessonsController {
     @CurrentUser('role') userRole: UserRole,
   ) {
     return this.lessonsService.remove(id, userId, userRole);
-  }
-
-  @Post('lessons/:id/view')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Darsni ko'rilgan deb belgilash" })
-  @ApiResponse({ status: 200, description: 'Dars belgilandi' })
-  async markAsViewed(
-    @Param('id') id: string,
-    @Body() dto: LessonViewDto,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.lessonsService.markAsViewed(id, userId, dto);
-  }
-
-  // Lesson Files
-  @Get('lessons/:lessonId/files')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Dars fayllari' })
-  @ApiResponse({ status: 200, description: "Fayllar ro'yxati" })
-  async getFiles(
-    @Param('lessonId') lessonId: string,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.lessonsService.getFiles(lessonId, userId);
-  }
-
-  @Post('lessons/:lessonId/files')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Darsga fayl qo'shish" })
-  @ApiResponse({ status: 201, description: "Fayl qo'shildi" })
-  async addFile(
-    @Param('lessonId') lessonId: string,
-    @Body() dto: CreateLessonFileDto,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') userRole: UserRole,
-  ) {
-    return this.lessonsService.addFile(lessonId, dto, userId, userRole);
-  }
-
-  @Delete('files/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Faylni o'chirish" })
-  @ApiResponse({ status: 200, description: "Fayl o'chirildi" })
-  async removeFile(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') userRole: UserRole,
-  ) {
-    return this.lessonsService.removeFile(id, userId, userRole);
   }
 }

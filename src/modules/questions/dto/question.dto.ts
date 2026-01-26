@@ -13,6 +13,18 @@ export class CreateQuestionDto {
   file?: string;
 }
 
+export class UpdateQuestionDto {
+  @ApiPropertyOptional({ example: 'React hooks haqida savol' })
+  @IsString()
+  @IsOptional()
+  text?: string;
+
+  @ApiPropertyOptional({ example: 'https://example.com/screenshot.png' })
+  @IsString()
+  @IsOptional()
+  file?: string;
+}
+
 export class CreateAnswerDto {
   @ApiProperty({ example: 'React hooks bu...' })
   @IsString()

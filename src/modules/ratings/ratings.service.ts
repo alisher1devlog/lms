@@ -5,16 +5,40 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateRatingDto, UpdateRatingDto } from './dto';
-import { UserRole } from '@prisma/client';
+import { CreateRatingDto } from './dto';
 
 @Injectable()
 export class RatingsService {
   constructor(private prisma: PrismaService) {}
 
-  async createRating(courseId: string, dto: CreateRatingDto, userId: string) {
+  async getLatestRatings(limit: number = 10) {
+    const ratings = await this.prisma.rating.findMany({
+      take: limit,
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            image: true,
+          },
+        },
+        course: {
+          select: {
+            id: true,
+            name: true,
+            banner: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { ratings };
+  }
+
+  async createRating(dto: CreateRatingDto, userId: string) {
     const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: dto.courseId },
     });
 
     if (!course) {
@@ -22,7 +46,7 @@ export class RatingsService {
     }
 
     // Check if user has purchased or assigned course
-    const hasAccess = await this.hasAccessToCourse(userId, courseId);
+    const hasAccess = await this.hasAccessToCourse(userId, dto.courseId);
     if (!hasAccess) {
       throw new ForbiddenException(
         'Faqat kursni sotib olgan foydalanuvchilar baho bera oladi',
@@ -31,7 +55,7 @@ export class RatingsService {
 
     // Check if user already rated
     const existingRating = await this.prisma.rating.findFirst({
-      where: { courseId, userId },
+      where: { courseId: dto.courseId, userId },
     });
 
     if (existingRating) {
@@ -40,8 +64,9 @@ export class RatingsService {
 
     const rating = await this.prisma.rating.create({
       data: {
-        ...dto,
-        courseId,
+        rate: dto.rate,
+        comment: dto.comment,
+        courseId: dto.courseId,
         userId,
       },
       include: {
@@ -60,8 +85,8 @@ export class RatingsService {
 
   async getRatingsByCourse(
     courseId: string,
-    page: number = 1,
-    limit: number = 10,
+    offset: number = 0,
+    limit: number = 8,
   ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -71,12 +96,10 @@ export class RatingsService {
       throw new NotFoundException('Kurs topilmadi');
     }
 
-    const skip = (page - 1) * limit;
-
     const [ratings, total, avgRating] = await Promise.all([
       this.prisma.rating.findMany({
         where: { courseId },
-        skip,
+        skip: offset,
         take: limit,
         include: {
           user: {
@@ -99,51 +122,62 @@ export class RatingsService {
     return {
       ratings,
       total,
+      offset,
+      limit,
       average: avgRating._avg.rate || 0,
     };
   }
 
-  async updateRating(id: string, dto: UpdateRatingDto, userId: string) {
-    const rating = await this.prisma.rating.findUnique({
-      where: { id },
+  async getRatingAnalytics(courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
     });
 
-    if (!rating) {
-      throw new NotFoundException('Baho topilmadi');
+    if (!course) {
+      throw new NotFoundException('Kurs topilmadi');
     }
 
-    if (rating.userId !== userId) {
-      throw new ForbiddenException("Faqat o'z bahongizni o'zgartira olasiz");
-    }
+    const [total, avgRating, distribution] = await Promise.all([
+      this.prisma.rating.count({ where: { courseId } }),
+      this.prisma.rating.aggregate({
+        where: { courseId },
+        _avg: { rate: true },
+      }),
+      this.prisma.rating.groupBy({
+        by: ['rate'],
+        where: { courseId },
+        _count: { rate: true },
+      }),
+    ]);
 
-    const updatedRating = await this.prisma.rating.update({
-      where: { id },
-      data: dto,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            image: true,
-          },
-        },
-      },
+    // Format distribution
+    const ratingDistribution = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
+
+    distribution.forEach((d) => {
+      ratingDistribution[d.rate] = d._count.rate;
     });
 
-    return { rating: updatedRating };
+    return {
+      courseId,
+      totalRatings: total,
+      averageRating: avgRating._avg.rate || 0,
+      distribution: ratingDistribution,
+    };
   }
 
-  async deleteRating(id: string, userId: string, userRole: UserRole) {
+  async deleteRating(id: string) {
     const rating = await this.prisma.rating.findUnique({
       where: { id },
     });
 
     if (!rating) {
       throw new NotFoundException('Baho topilmadi');
-    }
-
-    if (userRole !== UserRole.ADMIN && rating.userId !== userId) {
-      throw new ForbiddenException("Bu bahoni o'chirishga ruxsat yo'q");
     }
 
     await this.prisma.rating.delete({ where: { id } });

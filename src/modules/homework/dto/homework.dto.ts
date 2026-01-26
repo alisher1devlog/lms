@@ -3,6 +3,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { HomeworkSubStatus } from '@prisma/client';
 
 export class CreateHomeworkDto {
+  @ApiProperty({ description: 'Lesson ID' })
+  @IsString()
+  @IsNotEmpty()
+  lessonId: string;
+
   @ApiProperty({ example: 'React component yarating' })
   @IsString()
   @IsNotEmpty()
@@ -38,7 +43,12 @@ export class SubmitHomeworkDto {
   file: string;
 }
 
-export class UpdateSubmissionStatusDto {
+export class CheckSubmissionDto {
+  @ApiProperty({ description: 'Submission ID' })
+  @IsString()
+  @IsNotEmpty()
+  submissionId: string;
+
   @ApiProperty({ enum: HomeworkSubStatus })
   @IsEnum(HomeworkSubStatus)
   status: HomeworkSubStatus;
@@ -55,9 +65,9 @@ export class QuerySubmissionDto {
   @IsOptional()
   status?: HomeworkSubStatus;
 
-  @ApiPropertyOptional({ default: 1 })
+  @ApiPropertyOptional({ default: 0 })
   @IsOptional()
-  page?: number;
+  offset?: number;
 
   @ApiPropertyOptional({ default: 10 })
   @IsOptional()

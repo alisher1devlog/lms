@@ -90,6 +90,11 @@ export class UpdateCourseDto {
   @IsEnum(CourseLevel)
   @IsOptional()
   level?: CourseLevel;
+
+  @ApiPropertyOptional({ description: 'Kategoriya ID' })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
 }
 
 export class QueryCourseDto {
@@ -135,6 +140,53 @@ export class QueryCourseDto {
   @IsOptional()
   @Type(() => Number)
   price_max?: number;
+
+  @ApiPropertyOptional({ description: 'Published filter (true/false)' })
+  @IsOptional()
+  @Type(() => Boolean)
+  published?: boolean;
+}
+
+export class QueryAssignedCourseDto {
+  @ApiPropertyOptional({ default: 0, description: 'Offset for pagination' })
+  @IsOptional()
+  @Type(() => Number)
+  offset?: number;
+
+  @ApiPropertyOptional({ default: 8, description: 'Limit for pagination' })
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+
+  @ApiPropertyOptional({ description: 'Search by name or description' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    enum: CourseLevel,
+    description: 'Course level filter',
+  })
+  @IsEnum(CourseLevel)
+  @IsOptional()
+  level?: CourseLevel;
+
+  @ApiPropertyOptional({ description: 'Category ID filter' })
+  @IsOptional()
+  @IsString()
+  category_id?: string;
+}
+
+export class PaginationDto {
+  @ApiPropertyOptional({ default: 0, description: 'Offset for pagination' })
+  @IsOptional()
+  @Type(() => Number)
+  offset?: number;
+
+  @ApiPropertyOptional({ default: 8, description: 'Limit for pagination' })
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
 }
 
 export class PurchaseCourseDto {

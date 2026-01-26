@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Param,
   Body,
@@ -15,13 +15,14 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { HomeworkService } from './homework.service';
 import {
   CreateHomeworkDto,
   UpdateHomeworkDto,
   SubmitHomeworkDto,
-  UpdateSubmissionStatusDto,
+  CheckSubmissionDto,
   QuerySubmissionDto,
 } from './dto';
 import { CurrentUser, Roles } from '../../common/decorators';
@@ -29,30 +30,65 @@ import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Homework')
-@Controller('api')
+@Controller('api/homework')
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth()
 export class HomeworkController {
   constructor(private homeworkService: HomeworkService) {}
 
-  @Post('lessons/:lessonId/homework')
+  // MENTOR, ADMIN, ASSISTANT: Kurs vazifalarini olish
+  @Get('course/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MENTOR, UserRole.ADMIN, UserRole.ASSISTANT)
+  @ApiOperation({
+    summary: 'Kurs vazifalarini olish - MENTOR, ADMIN, ASSISTANT',
+  })
+  @ApiResponse({ status: 200, description: "Vazifalar ro'yxati" })
+  async getHomeworksByCourse(
+    @Param('id') courseId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') userRole: UserRole,
+  ) {
+    return this.homeworkService.getHomeworksByCourse(
+      courseId,
+      userId,
+      userRole,
+    );
+  }
+
+  // MENTOR, ADMIN, ASSISTANT: Vazifa detali
+  @Get('detail/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MENTOR, UserRole.ADMIN, UserRole.ASSISTANT)
+  @ApiOperation({ summary: 'Vazifa detali - MENTOR, ADMIN, ASSISTANT' })
+  @ApiResponse({ status: 200, description: "Vazifa ma'lumotlari" })
+  async getHomeworkDetail(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') userRole: UserRole,
+  ) {
+    return this.homeworkService.getHomeworkById(id, userId, userRole);
+  }
+
+  // MENTOR, ADMIN: Vazifa yaratish
+  @Post('create')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiOperation({ summary: 'Darsga vazifa yaratish' })
+  @ApiOperation({ summary: 'Vazifa yaratish - MENTOR, ADMIN' })
   @ApiResponse({ status: 201, description: 'Vazifa yaratildi' })
   async createHomework(
-    @Param('lessonId') lessonId: string,
     @Body() dto: CreateHomeworkDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.homeworkService.createHomework(lessonId, dto, userId, userRole);
+    return this.homeworkService.createHomework(dto, userId, userRole);
   }
 
-  @Put('homework/:id')
+  // MENTOR, ADMIN: Vazifani yangilash
+  @Patch('update/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiOperation({ summary: 'Vazifani yangilash' })
+  @ApiOperation({ summary: 'Vazifani yangilash - MENTOR, ADMIN' })
   @ApiResponse({ status: 200, description: 'Vazifa yangilandi' })
   async updateHomework(
     @Param('id') id: string,
@@ -63,10 +99,11 @@ export class HomeworkController {
     return this.homeworkService.updateHomework(id, dto, userId, userRole);
   }
 
-  @Delete('homework/:id')
+  // MENTOR, ADMIN: Vazifani o'chirish
+  @Delete('delete/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiOperation({ summary: "Vazifani o'chirish" })
+  @ApiOperation({ summary: "Vazifani o'chirish - MENTOR, ADMIN" })
   @ApiResponse({ status: 200, description: "Vazifa o'chirildi" })
   async deleteHomework(
     @Param('id') id: string,
@@ -76,63 +113,77 @@ export class HomeworkController {
     return this.homeworkService.deleteHomework(id, userId, userRole);
   }
 
-  @Post('homework/:homeworkId/submit')
+  // STUDENT: Mening topshirig'im (dars bo'yicha)
+  @Get('submission/mine/:lessonId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.STUDENT)
-  @ApiOperation({ summary: 'Vazifani topshirish' })
+  @ApiOperation({ summary: "Mening topshirig'im (dars bo'yicha) - STUDENT" })
+  @ApiResponse({ status: 200, description: "Topshiriq ma'lumotlari" })
+  async getMySubmissionByLesson(
+    @Param('lessonId') lessonId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.homeworkService.getMySubmissionByLesson(lessonId, userId);
+  }
+
+  // STUDENT: Vazifa topshirish
+  @Post('submission/submit/:lessonId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.STUDENT)
+  @ApiOperation({ summary: 'Vazifa topshirish - STUDENT' })
   @ApiResponse({ status: 201, description: 'Vazifa topshirildi' })
   async submitHomework(
-    @Param('homeworkId') homeworkId: string,
+    @Param('lessonId') lessonId: string,
     @Body() dto: SubmitHomeworkDto,
     @CurrentUser('id') userId: string,
   ) {
-    return this.homeworkService.submitHomework(homeworkId, dto, userId);
+    return this.homeworkService.submitHomework(lessonId, dto, userId);
   }
 
-  @Get('homework/:homeworkId/submissions')
+  // MENTOR, ADMIN, ASSISTANT: Barcha topshiriqlar
+  @Get('submissions/all')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT)
-  @ApiOperation({ summary: 'Vazifa topshiriqlari' })
+  @ApiOperation({ summary: 'Barcha topshiriqlar - MENTOR, ADMIN, ASSISTANT' })
   @ApiResponse({ status: 200, description: "Topshiriqlar ro'yxati" })
-  async getSubmissions(
-    @Param('homeworkId') homeworkId: string,
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'offset', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async getAllSubmissions(
     @Query() query: QuerySubmissionDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.homeworkService.getSubmissions(
-      homeworkId,
-      query,
-      userId,
-      userRole,
-    );
+    return this.homeworkService.getAllSubmissions(query, userId, userRole);
   }
 
-  @Put('submissions/:id/status')
+  // MENTOR, ADMIN, ASSISTANT: Bitta topshiriq detali
+  @Get('submissions/single/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT)
-  @ApiOperation({ summary: "Topshiriq statusini o'zgartirish" })
-  @ApiResponse({ status: 200, description: "Status o'zgartirildi" })
-  async updateSubmissionStatus(
+  @ApiOperation({ summary: 'Topshiriq detali - MENTOR, ADMIN, ASSISTANT' })
+  @ApiResponse({ status: 200, description: "Topshiriq ma'lumotlari" })
+  async getSubmissionDetail(
     @Param('id') id: string,
-    @Body() dto: UpdateSubmissionStatusDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.homeworkService.updateSubmissionStatus(
-      id,
-      dto,
-      userId,
-      userRole,
-    );
+    return this.homeworkService.getSubmissionById(id, userId, userRole);
   }
 
-  @Get('my-submissions')
+  // MENTOR, ADMIN, ASSISTANT: Topshiriqni tekshirish
+  @Post('submission/check')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.STUDENT)
-  @ApiOperation({ summary: 'Mening topshiriqlarim' })
-  @ApiResponse({ status: 200, description: "Topshiriqlar ro'yxati" })
-  async getMySubmissions(@CurrentUser('id') userId: string) {
-    return this.homeworkService.getMySubmissions(userId);
+  @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT)
+  @ApiOperation({
+    summary: 'Topshiriqni tekshirish - MENTOR, ADMIN, ASSISTANT',
+  })
+  @ApiResponse({ status: 200, description: 'Topshiriq tekshirildi' })
+  async checkSubmission(
+    @Body() dto: CheckSubmissionDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') userRole: UserRole,
+  ) {
+    return this.homeworkService.checkSubmission(dto, userId, userRole);
   }
 }
