@@ -4,7 +4,6 @@ import {
   IsNumber,
   IsOptional,
   IsEnum,
-  IsBoolean,
   IsInt,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -136,12 +135,6 @@ export class QueryCourseDto {
   @IsOptional()
   @Type(() => Number)
   price_max?: number;
-
-  @ApiPropertyOptional({ description: 'Published filter (admin only)' })
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  published?: boolean;
 }
 
 export class PurchaseCourseDto {

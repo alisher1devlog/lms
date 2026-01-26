@@ -76,9 +76,9 @@ model User {
   role      UserRole @default(STUDENT)
   fullName  String
   image     String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  // Relations
   mentorProfile       MentorProfile?
   courses             Course[]             @relation("MentorCourses")
   assignedCourses     AssignedCourse[]
@@ -143,29 +143,27 @@ model Course {
 }
 
 model AssignedCourse {
+  id        String   @id @default(uuid())
   userId    String
-  courseId  String
+  courseId  String?
   createdAt DateTime @default(now())
 
   // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@id([userId, courseId])
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 }
 
 model PurchasedCourse {
-  courseId    String
+  id          String   @id @default(uuid())
+  courseId    String?
   userId      String
   amount      Decimal?
   paidVia     PaidVia
   purchasedAt DateTime @default(now())
 
   // Relations
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([userId, courseId])
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Rating {

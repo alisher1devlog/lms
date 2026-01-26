@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   QueryUserDto,
+  QueryMentorDto,
   UpdateProfileDto,
   UpdatePasswordDto,
   UpdatePhoneDto,
@@ -25,33 +26,56 @@ import { UserRole, OTPType } from '@prisma/client';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async getMentors() {
-    const mentors = await this.prisma.user.findMany({
-      where: { role: UserRole.MENTOR },
-      select: {
-        id: true,
-        phone: true,
-        fullName: true,
-        image: true,
-        createdAt: true,
-        mentorProfile: {
-          select: {
-            about: true,
-            job: true,
-            experience: true,
-            telegram: true,
+  async getMentors(query: QueryMentorDto) {
+    const { offset = 0, limit = 8, search } = query;
+
+    const where: any = { role: UserRole.MENTOR, isActive: true };
+
+    if (search) {
+      where.fullName = { contains: search, mode: 'insensitive' };
+    }
+
+    const [mentors, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip: +offset,
+        take: +limit,
+        select: {
+          id: true,
+          phone: true,
+          fullName: true,
+          image: true,
+          createdAt: true,
+          mentorProfile: {
+            select: {
+              about: true,
+              job: true,
+              experience: true,
+              telegram: true,
+              instagram: true,
+              linkedin: true,
+              facebook: true,
+              github: true,
+              website: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
 
-    return { mentors };
+    return {
+      mentors,
+      total,
+      offset: +offset,
+      limit: +limit,
+    };
   }
 
   async getMentorById(id: string) {
-    const mentor = await this.prisma.user.findUnique({
-      where: { id, role: UserRole.MENTOR },
+    const mentor = await this.prisma.user.findFirst({
+      where: { id, role: UserRole.MENTOR, isActive: true },
       select: {
         id: true,
         phone: true,
@@ -64,6 +88,11 @@ export class UsersService {
             job: true,
             experience: true,
             telegram: true,
+            instagram: true,
+            linkedin: true,
+            facebook: true,
+            github: true,
+            website: true,
           },
         },
       },
@@ -77,15 +106,22 @@ export class UsersService {
   }
 
   async findAll(query: QueryUserDto) {
-    const { role, page = 1, limit = 10 } = query;
-    const skip = (page - 1) * limit;
+    const { role, offset = 0, limit = 10, search } = query;
 
-    const where = role ? { role } : {};
+    const where: any = { isActive: true };
+
+    if (role) where.role = role;
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
-        skip,
+        skip: +offset,
         take: +limit,
         select: {
           id: true,
@@ -103,7 +139,7 @@ export class UsersService {
     return {
       users,
       total,
-      page: +page,
+      offset: +offset,
       limit: +limit,
     };
   }
@@ -200,7 +236,6 @@ export class UsersService {
   }
 
   async createMentor(dto: CreateMentorDto) {
-    // Telefon band emasligini tekshirish
     const existingPhone = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
     });
@@ -237,6 +272,11 @@ export class UsersService {
             job: dto.job,
             experience: dto.experience ? parseInt(dto.experience) : 0,
             telegram: dto.telegram,
+            instagram: dto.instagram,
+            linkedin: dto.linkedin,
+            facebook: dto.facebook,
+            github: dto.github,
+            website: dto.website,
           },
         },
       },
@@ -269,40 +309,50 @@ export class UsersService {
       );
     }
 
-    // Email band emasligini tekshirish
-    if (dto.email) {
-      const existingEmail = await this.prisma.user.findUnique({
-        where: { email: dto.email },
-      });
+    // Kurs mavjudligini tekshirish
+    const course = await this.prisma.course.findUnique({
+      where: { id: dto.courseId },
+    });
 
-      if (existingEmail) {
-        throw new ConflictException("Bu email allaqachon ro'yxatdan o'tgan");
-      }
+    if (!course) {
+      throw new NotFoundException('Kurs topilmadi');
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const assistant = await this.prisma.user.create({
-      data: {
-        phone: dto.phone,
-        fullName: dto.fullName,
-        password: hashedPassword,
-        email: dto.email,
-        role: UserRole.ASSISTANT,
-      },
-      select: {
-        id: true,
-        phone: true,
-        fullName: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
+    // Transaction ichida assistant va assigned course yaratamiz
+    const result = await this.prisma.$transaction(async (prisma) => {
+      const assistant = await prisma.user.create({
+        data: {
+          phone: dto.phone,
+          fullName: dto.fullName,
+          password: hashedPassword,
+          role: UserRole.ASSISTANT,
+        },
+        select: {
+          id: true,
+          phone: true,
+          fullName: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      // Assistant ni kursga biriktirish
+      await prisma.assignedCourse.create({
+        data: {
+          userId: assistant.id,
+          courseId: dto.courseId,
+        },
+      });
+
+      return assistant;
     });
 
     return {
-      message: 'Assistant muvaffaqiyatli yaratildi',
-      user: assistant,
+      message: 'Assistant muvaffaqiyatli yaratildi va kursga biriktirildi',
+      user: result,
+      courseId: dto.courseId,
     };
   }
 
@@ -339,12 +389,22 @@ export class UsersService {
               job: dto.job,
               experience: dto.experience ? parseInt(dto.experience) : 0,
               telegram: dto.telegram,
+              instagram: dto.instagram,
+              linkedin: dto.linkedin,
+              facebook: dto.facebook,
+              github: dto.github,
+              website: dto.website,
             },
             update: {
               ...(dto.about && { about: dto.about }),
               ...(dto.job && { job: dto.job }),
               ...(dto.experience && { experience: parseInt(dto.experience) }),
               ...(dto.telegram && { telegram: dto.telegram }),
+              ...(dto.instagram && { instagram: dto.instagram }),
+              ...(dto.linkedin && { linkedin: dto.linkedin }),
+              ...(dto.facebook && { facebook: dto.facebook }),
+              ...(dto.github && { github: dto.github }),
+              ...(dto.website && { website: dto.website }),
             },
           },
         },
@@ -374,7 +434,11 @@ export class UsersService {
       throw new NotFoundException('Foydalanuvchi topilmadi');
     }
 
-    await this.prisma.user.delete({ where: { id } });
+    // Soft delete - foydalanuvchini inactive qilish
+    await this.prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
     return { message: "Foydalanuvchi o'chirildi" };
   }

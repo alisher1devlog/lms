@@ -337,11 +337,11 @@ export class LessonsService {
     }
 
     const [purchased, assigned, course] = await Promise.all([
-      this.prisma.purchasedCourse.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      this.prisma.purchasedCourse.findFirst({
+        where: { userId, courseId },
       }),
-      this.prisma.assignedCourse.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      this.prisma.assignedCourse.findFirst({
+        where: { userId, courseId },
       }),
       this.prisma.course.findUnique({
         where: { id: courseId },
