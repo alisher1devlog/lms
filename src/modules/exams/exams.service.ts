@@ -4,7 +4,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateExamDto, CreateManyExamsDto, UpdateExamDto, SubmitExamDto } from './dto';
+import {
+  CreateExamDto,
+  CreateManyExamsDto,
+  UpdateExamDto,
+  SubmitExamDto,
+} from './dto';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
@@ -38,7 +43,11 @@ export class ExamsService {
   }
 
   // ADMIN, MENTOR: Ko'plab imtihon yaratish
-  async createManyExams(dto: CreateManyExamsDto, userId: string, userRole: UserRole) {
+  async createManyExams(
+    dto: CreateManyExamsDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const group = await this.prisma.lessonGroup.findUnique({
       where: { id: dto.lessonGroupId },
       include: { course: true },
@@ -59,11 +68,19 @@ export class ExamsService {
       })),
     });
 
-    return { count: exams.count, message: `${exams.count} ta imtihon yaratildi` };
+    return {
+      count: exams.count,
+      message: `${exams.count} ta imtihon yaratildi`,
+    };
   }
 
   // ADMIN, MENTOR: Imtihonni yangilash
-  async updateExam(id: string, dto: UpdateExamDto, userId: string, userRole: UserRole) {
+  async updateExam(
+    id: string,
+    dto: UpdateExamDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const exam = await this.prisma.exam.findUnique({
       where: { id },
       include: {
@@ -77,7 +94,10 @@ export class ExamsService {
       throw new NotFoundException('Imtihon topilmadi');
     }
 
-    if (userRole !== UserRole.ADMIN && exam.lessonGroup.course.mentorId !== userId) {
+    if (
+      userRole !== UserRole.ADMIN &&
+      exam.lessonGroup.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Imtihonni yangilashga ruxsat yo'q");
     }
 
@@ -104,7 +124,10 @@ export class ExamsService {
       throw new NotFoundException('Imtihon topilmadi');
     }
 
-    if (userRole !== UserRole.ADMIN && exam.lessonGroup.course.mentorId !== userId) {
+    if (
+      userRole !== UserRole.ADMIN &&
+      exam.lessonGroup.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Imtihonni ko'rishga ruxsat yo'q");
     }
 
@@ -144,7 +167,11 @@ export class ExamsService {
   }
 
   // ADMIN, MENTOR: Bo'lim imtihon savollari (javobli)
-  async getExamsByGroupWithAnswers(groupId: string, userId: string, userRole: UserRole) {
+  async getExamsByGroupWithAnswers(
+    groupId: string,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const group = await this.prisma.lessonGroup.findUnique({
       where: { id: groupId },
       include: { course: true },

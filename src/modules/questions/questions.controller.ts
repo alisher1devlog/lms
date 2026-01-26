@@ -16,7 +16,12 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { QuestionsService } from './questions.service';
-import { CreateQuestionDto, UpdateQuestionDto, CreateAnswerDto, UpdateAnswerDto } from './dto';
+import {
+  CreateQuestionDto,
+  UpdateQuestionDto,
+  CreateAnswerDto,
+  UpdateAnswerDto,
+} from './dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';
@@ -49,7 +54,11 @@ export class QuestionsController {
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.questionsService.getQuestionsByCourse(courseId, userId, userRole);
+    return this.questionsService.getQuestionsByCourse(
+      courseId,
+      userId,
+      userRole,
+    );
   }
 
   // MENTOR, ADMIN, ASSISTANT, STUDENT: Bitta savol detali
@@ -57,7 +66,7 @@ export class QuestionsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN, UserRole.ASSISTANT, UserRole.STUDENT)
   @ApiOperation({ summary: 'Savol detali - MENTOR, ADMIN, ASSISTANT, STUDENT' })
-  @ApiResponse({ status: 200, description: 'Savol ma\'lumotlari' })
+  @ApiResponse({ status: 200, description: "Savol ma'lumotlari" })
   async getQuestionById(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -70,7 +79,9 @@ export class QuestionsController {
   @Post('read/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN, UserRole.ASSISTANT)
-  @ApiOperation({ summary: "Savolni o'qilgan deb belgilash - MENTOR, ADMIN, ASSISTANT" })
+  @ApiOperation({
+    summary: "Savolni o'qilgan deb belgilash - MENTOR, ADMIN, ASSISTANT",
+  })
   @ApiResponse({ status: 200, description: 'Savol belgilandi' })
   async markAsRead(
     @Param('id') id: string,
@@ -120,7 +131,12 @@ export class QuestionsController {
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.questionsService.answerQuestion(questionId, dto, userId, userRole);
+    return this.questionsService.answerQuestion(
+      questionId,
+      dto,
+      userId,
+      userRole,
+    );
   }
 
   // MENTOR, ASSISTANT, ADMIN: Javobni yangilash

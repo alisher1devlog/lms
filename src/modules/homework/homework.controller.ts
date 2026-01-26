@@ -40,14 +40,20 @@ export class HomeworkController {
   @Get('course/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN, UserRole.ASSISTANT)
-  @ApiOperation({ summary: 'Kurs vazifalarini olish - MENTOR, ADMIN, ASSISTANT' })
+  @ApiOperation({
+    summary: 'Kurs vazifalarini olish - MENTOR, ADMIN, ASSISTANT',
+  })
   @ApiResponse({ status: 200, description: "Vazifalar ro'yxati" })
   async getHomeworksByCourse(
     @Param('id') courseId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.homeworkService.getHomeworksByCourse(courseId, userId, userRole);
+    return this.homeworkService.getHomeworksByCourse(
+      courseId,
+      userId,
+      userRole,
+    );
   }
 
   // MENTOR, ADMIN, ASSISTANT: Vazifa detali
@@ -55,7 +61,7 @@ export class HomeworkController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN, UserRole.ASSISTANT)
   @ApiOperation({ summary: 'Vazifa detali - MENTOR, ADMIN, ASSISTANT' })
-  @ApiResponse({ status: 200, description: 'Vazifa ma\'lumotlari' })
+  @ApiResponse({ status: 200, description: "Vazifa ma'lumotlari" })
   async getHomeworkDetail(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -111,8 +117,8 @@ export class HomeworkController {
   @Get('submission/mine/:lessonId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.STUDENT)
-  @ApiOperation({ summary: 'Mening topshirig\'im (dars bo\'yicha) - STUDENT' })
-  @ApiResponse({ status: 200, description: 'Topshiriq ma\'lumotlari' })
+  @ApiOperation({ summary: "Mening topshirig'im (dars bo'yicha) - STUDENT" })
+  @ApiResponse({ status: 200, description: "Topshiriq ma'lumotlari" })
   async getMySubmissionByLesson(
     @Param('lessonId') lessonId: string,
     @CurrentUser('id') userId: string,
@@ -156,7 +162,7 @@ export class HomeworkController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT)
   @ApiOperation({ summary: 'Topshiriq detali - MENTOR, ADMIN, ASSISTANT' })
-  @ApiResponse({ status: 200, description: 'Topshiriq ma\'lumotlari' })
+  @ApiResponse({ status: 200, description: "Topshiriq ma'lumotlari" })
   async getSubmissionDetail(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -169,7 +175,9 @@ export class HomeworkController {
   @Post('submission/check')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT)
-  @ApiOperation({ summary: 'Topshiriqni tekshirish - MENTOR, ADMIN, ASSISTANT' })
+  @ApiOperation({
+    summary: 'Topshiriqni tekshirish - MENTOR, ADMIN, ASSISTANT',
+  })
   @ApiResponse({ status: 200, description: 'Topshiriq tekshirildi' })
   async checkSubmission(
     @Body() dto: CheckSubmissionDto,

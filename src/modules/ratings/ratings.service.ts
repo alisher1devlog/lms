@@ -5,8 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateRatingDto, UpdateRatingDto } from './dto';
-import { UserRole } from '@prisma/client';
+import { CreateRatingDto } from './dto';
 
 @Injectable()
 export class RatingsService {

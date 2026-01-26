@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsEnum,
   IsInt,
-  IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CourseLevel, PaidVia } from '@prisma/client';

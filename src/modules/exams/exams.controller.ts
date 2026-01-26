@@ -16,7 +16,12 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ExamsService } from './exams.service';
-import { CreateExamDto, CreateManyExamsDto, UpdateExamDto, SubmitExamDto } from './dto';
+import {
+  CreateExamDto,
+  CreateManyExamsDto,
+  UpdateExamDto,
+  SubmitExamDto,
+} from './dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';
@@ -58,14 +63,20 @@ export class ExamsController {
   @Get('lesson-group/details/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.MENTOR, UserRole.ADMIN)
-  @ApiOperation({ summary: "Bo'lim imtihon savollari (javobli) - MENTOR, ADMIN" })
+  @ApiOperation({
+    summary: "Bo'lim imtihon savollari (javobli) - MENTOR, ADMIN",
+  })
   @ApiResponse({ status: 200, description: "Savollar ro'yxati" })
   async getLessonGroupExamsWithAnswers(
     @Param('id') lessonGroupId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: UserRole,
   ) {
-    return this.examsService.getExamsByGroupWithAnswers(lessonGroupId, userId, userRole);
+    return this.examsService.getExamsByGroupWithAnswers(
+      lessonGroupId,
+      userId,
+      userRole,
+    );
   }
 
   // ADMIN, MENTOR: Bitta imtihon detali
@@ -73,7 +84,7 @@ export class ExamsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
   @ApiOperation({ summary: 'Imtihon detali - ADMIN, MENTOR' })
-  @ApiResponse({ status: 200, description: 'Imtihon ma\'lumotlari' })
+  @ApiResponse({ status: 200, description: "Imtihon ma'lumotlari" })
   async getExamDetail(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -100,7 +111,9 @@ export class ExamsController {
   @Post('create/many')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
-  @ApiOperation({ summary: "Ko'plab imtihon savollari yaratish - ADMIN, MENTOR" })
+  @ApiOperation({
+    summary: "Ko'plab imtihon savollari yaratish - ADMIN, MENTOR",
+  })
   @ApiResponse({ status: 201, description: 'Imtihonlar yaratildi' })
   async createManyExams(
     @Body() dto: CreateManyExamsDto,

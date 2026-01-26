@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Delete,
   Param,
   Body,
@@ -18,7 +17,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { RatingsService } from './ratings.service';
-import { CreateRatingDto, UpdateRatingDto } from './dto';
+import { CreateRatingDto } from './dto';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { UserRole } from '@prisma/client';

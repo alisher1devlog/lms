@@ -4,7 +4,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateQuestionDto, UpdateQuestionDto, CreateAnswerDto, UpdateAnswerDto } from './dto';
+import {
+  CreateQuestionDto,
+  UpdateQuestionDto,
+  CreateAnswerDto,
+  UpdateAnswerDto,
+} from './dto';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
@@ -40,7 +45,11 @@ export class QuestionsService {
   }
 
   // MENTOR, ADMIN, ASSISTANT: Kurs savollari
-  async getQuestionsByCourse(courseId: string, userId: string, userRole: UserRole) {
+  async getQuestionsByCourse(
+    courseId: string,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -59,7 +68,9 @@ export class QuestionsService {
         where: { userId, courseId },
       });
       if (!assigned) {
-        throw new ForbiddenException("Bu kurs savollarini ko'rishga ruxsat yo'q");
+        throw new ForbiddenException(
+          "Bu kurs savollarini ko'rishga ruxsat yo'q",
+        );
       }
     }
 
@@ -144,7 +155,11 @@ export class QuestionsService {
   }
 
   // STUDENT: Savol yaratish
-  async createQuestion(courseId: string, dto: CreateQuestionDto, userId: string) {
+  async createQuestion(
+    courseId: string,
+    dto: CreateQuestionDto,
+    userId: string,
+  ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -247,7 +262,12 @@ export class QuestionsService {
   }
 
   // MENTOR, ASSISTANT: Savolga javob berish
-  async answerQuestion(questionId: string, dto: CreateAnswerDto, userId: string, userRole: UserRole) {
+  async answerQuestion(
+    questionId: string,
+    dto: CreateAnswerDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const question = await this.prisma.question.findUnique({
       where: { id: questionId },
       include: { course: true },
@@ -289,7 +309,12 @@ export class QuestionsService {
   }
 
   // MENTOR, ASSISTANT, ADMIN: Javobni yangilash
-  async updateAnswer(id: string, dto: UpdateAnswerDto, userId: string, userRole: UserRole) {
+  async updateAnswer(
+    id: string,
+    dto: UpdateAnswerDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const answer = await this.prisma.questionAnswer.findUnique({
       where: { id },
       include: {
@@ -356,7 +381,10 @@ export class QuestionsService {
     return { message: "Javob o'chirildi" };
   }
 
-  private async hasAccessToCourse(userId: string, courseId: string): Promise<boolean> {
+  private async hasAccessToCourse(
+    userId: string,
+    courseId: string,
+  ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([
       this.prisma.purchasedCourse.findFirst({
         where: { userId, courseId },

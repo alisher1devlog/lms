@@ -19,7 +19,11 @@ export class HomeworkService {
   constructor(private prisma: PrismaService) {}
 
   // Kurs vazifalarini olish
-  async getHomeworksByCourse(courseId: string, userId: string, userRole: UserRole) {
+  async getHomeworksByCourse(
+    courseId: string,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -101,7 +105,10 @@ export class HomeworkService {
     }
 
     // Check access
-    if (userRole === UserRole.MENTOR && homework.lesson.group.course.mentorId !== userId) {
+    if (
+      userRole === UserRole.MENTOR &&
+      homework.lesson.group.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Bu vazifani ko'rishga ruxsat yo'q");
     }
 
@@ -118,7 +125,11 @@ export class HomeworkService {
   }
 
   // Vazifa yaratish
-  async createHomework(dto: CreateHomeworkDto, userId: string, userRole: UserRole) {
+  async createHomework(
+    dto: CreateHomeworkDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: dto.lessonId },
       include: {
@@ -137,7 +148,10 @@ export class HomeworkService {
       throw new ConflictException('Bu dars uchun vazifa allaqachon mavjud');
     }
 
-    if (userRole !== UserRole.ADMIN && lesson.group.course.mentorId !== userId) {
+    if (
+      userRole !== UserRole.ADMIN &&
+      lesson.group.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Vazifa yaratishga ruxsat yo'q");
     }
 
@@ -153,7 +167,12 @@ export class HomeworkService {
   }
 
   // Vazifani yangilash
-  async updateHomework(id: string, dto: UpdateHomeworkDto, userId: string, userRole: UserRole) {
+  async updateHomework(
+    id: string,
+    dto: UpdateHomeworkDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const homework = await this.prisma.homework.findUnique({
       where: { id },
       include: {
@@ -171,7 +190,10 @@ export class HomeworkService {
       throw new NotFoundException('Vazifa topilmadi');
     }
 
-    if (userRole !== UserRole.ADMIN && homework.lesson.group.course.mentorId !== userId) {
+    if (
+      userRole !== UserRole.ADMIN &&
+      homework.lesson.group.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Vazifani o'zgartirishga ruxsat yo'q");
     }
 
@@ -202,7 +224,10 @@ export class HomeworkService {
       throw new NotFoundException('Vazifa topilmadi');
     }
 
-    if (userRole !== UserRole.ADMIN && homework.lesson.group.course.mentorId !== userId) {
+    if (
+      userRole !== UserRole.ADMIN &&
+      homework.lesson.group.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Vazifani o'chirishga ruxsat yo'q");
     }
 
@@ -226,7 +251,10 @@ export class HomeworkService {
     }
 
     // Check access to course
-    const hasAccess = await this.hasAccessToCourse(userId, lesson.group.courseId);
+    const hasAccess = await this.hasAccessToCourse(
+      userId,
+      lesson.group.courseId,
+    );
     if (!hasAccess) {
       throw new ForbiddenException("Bu kursga kirish huquqi yo'q");
     }
@@ -249,7 +277,11 @@ export class HomeworkService {
   }
 
   // STUDENT: Vazifa topshirish
-  async submitHomework(lessonId: string, dto: SubmitHomeworkDto, userId: string) {
+  async submitHomework(
+    lessonId: string,
+    dto: SubmitHomeworkDto,
+    userId: string,
+  ) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {
@@ -269,7 +301,10 @@ export class HomeworkService {
     }
 
     // Check access to course
-    const hasAccess = await this.hasAccessToCourse(userId, lesson.group.courseId);
+    const hasAccess = await this.hasAccessToCourse(
+      userId,
+      lesson.group.courseId,
+    );
     if (!hasAccess) {
       throw new ForbiddenException("Bu kursga kirish huquqi yo'q");
     }
@@ -306,7 +341,11 @@ export class HomeworkService {
   }
 
   // Barcha topshiriqlar
-  async getAllSubmissions(query: QuerySubmissionDto, userId: string, userRole: UserRole) {
+  async getAllSubmissions(
+    query: QuerySubmissionDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const { status, offset = 0, limit = 10 } = query;
 
     const where: any = {};
@@ -418,7 +457,10 @@ export class HomeworkService {
     }
 
     // Check access
-    if (userRole === UserRole.MENTOR && submission.homework.lesson.group.course.mentorId !== userId) {
+    if (
+      userRole === UserRole.MENTOR &&
+      submission.homework.lesson.group.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Bu topshiriqni ko'rishga ruxsat yo'q");
     }
 
@@ -435,7 +477,11 @@ export class HomeworkService {
   }
 
   // Topshiriqni tekshirish
-  async checkSubmission(dto: CheckSubmissionDto, userId: string, userRole: UserRole) {
+  async checkSubmission(
+    dto: CheckSubmissionDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
     const submission = await this.prisma.homeworkSubmission.findUnique({
       where: { id: dto.submissionId },
       include: {
@@ -458,7 +504,10 @@ export class HomeworkService {
     }
 
     // Check access
-    if (userRole === UserRole.MENTOR && submission.homework.lesson.group.course.mentorId !== userId) {
+    if (
+      userRole === UserRole.MENTOR &&
+      submission.homework.lesson.group.course.mentorId !== userId
+    ) {
       throw new ForbiddenException("Bu topshiriqni tekshirishga ruxsat yo'q");
     }
 
@@ -482,7 +531,10 @@ export class HomeworkService {
     return { submission: updatedSubmission };
   }
 
-  private async hasAccessToCourse(userId: string, courseId: string): Promise<boolean> {
+  private async hasAccessToCourse(
+    userId: string,
+    courseId: string,
+  ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([
       this.prisma.purchasedCourse.findFirst({
         where: { userId, courseId },
