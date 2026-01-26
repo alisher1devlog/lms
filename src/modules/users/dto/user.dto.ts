@@ -30,13 +30,41 @@ export class QueryUserDto {
   @IsOptional()
   role?: UserRole;
 
-  @ApiPropertyOptional({ default: 1 })
+  @ApiPropertyOptional({ default: 0, description: 'Offset for pagination' })
   @IsOptional()
-  page?: number;
+  offset?: number;
 
   @ApiPropertyOptional({ default: 10 })
   @IsOptional()
   limit?: number;
+
+  @ApiPropertyOptional({ description: 'Search by name or phone' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+}
+
+export class QueryMentorDto {
+  @ApiPropertyOptional({
+    default: 0,
+    example: 0,
+    description: 'Offset for pagination',
+  })
+  @IsOptional()
+  offset?: number;
+
+  @ApiPropertyOptional({
+    default: 8,
+    example: 8,
+    description: 'Limit for pagination',
+  })
+  @IsOptional()
+  limit?: number;
+
+  @ApiPropertyOptional({ description: 'Search by name' })
+  @IsString()
+  @IsOptional()
+  search?: string;
 }
 
 export class UpdateUserRoleDto {

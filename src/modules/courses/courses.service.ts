@@ -39,9 +39,7 @@ export class CoursesService {
     // limit 0 yoki undefined bo'lsa default 10 qilamiz
     const takeLimit = +limit > 0 ? +limit : 10;
 
-    const where: any = {
-      published: true, // Public endpoint faqat published kurslarni ko'rsatadi
-    };
+    const where: any = {};
 
     if (category_id) where.categoryId = category_id;
     if (mentor_id) where.mentorId = mentor_id;
@@ -236,7 +234,6 @@ export class CoursesService {
       category_id,
       mentor_id,
       level,
-      published,
       search,
       price_min,
       price_max,
@@ -249,7 +246,6 @@ export class CoursesService {
     if (category_id) where.categoryId = category_id;
     if (mentor_id) where.mentorId = mentor_id;
     if (level) where.level = level;
-    if (published !== undefined) where.published = published;
     if (price_min !== undefined || price_max !== undefined) {
       where.price = {};
       if (price_min !== undefined) where.price.gte = price_min;
@@ -538,7 +534,6 @@ export class CoursesService {
     const {
       category_id,
       level,
-      published,
       search,
       price_min,
       price_max,
@@ -550,7 +545,6 @@ export class CoursesService {
 
     if (category_id) where.categoryId = category_id;
     if (level) where.level = level;
-    if (published !== undefined) where.published = published;
     if (price_min !== undefined || price_max !== undefined) {
       where.price = {};
       if (price_min !== undefined) where.price.gte = price_min;
@@ -705,12 +699,10 @@ export class CoursesService {
       throw new NotFoundException('Assistant topilmadi');
     }
 
-    const existingAssignment = await this.prisma.assignedCourse.findUnique({
+    const existingAssignment = await this.prisma.assignedCourse.findFirst({
       where: {
-        userId_courseId: {
-          userId: dto.assistantId,
-          courseId: dto.courseId,
-        },
+        userId: dto.assistantId,
+        courseId: dto.courseId,
       },
     });
 
@@ -765,12 +757,10 @@ export class CoursesService {
       throw new ForbiddenException("Bu kursga ruxsat yo'q");
     }
 
-    const assignment = await this.prisma.assignedCourse.findUnique({
+    const assignment = await this.prisma.assignedCourse.findFirst({
       where: {
-        userId_courseId: {
-          userId: dto.assistantId,
-          courseId: dto.courseId,
-        },
+        userId: dto.assistantId,
+        courseId: dto.courseId,
       },
     });
 
@@ -780,10 +770,7 @@ export class CoursesService {
 
     await this.prisma.assignedCourse.delete({
       where: {
-        userId_courseId: {
-          userId: dto.assistantId,
-          courseId: dto.courseId,
-        },
+        id: assignment.id,
       },
     });
 
@@ -792,11 +779,11 @@ export class CoursesService {
 
   async hasAccessToCourse(userId: string, courseId: string): Promise<boolean> {
     const [purchased, assigned, course] = await Promise.all([
-      this.prisma.purchasedCourse.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      this.prisma.purchasedCourse.findFirst({
+        where: { userId, courseId },
       }),
-      this.prisma.assignedCourse.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      this.prisma.assignedCourse.findFirst({
+        where: { userId, courseId },
       }),
       this.prisma.course.findUnique({
         where: { id: courseId },

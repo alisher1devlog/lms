@@ -19,6 +19,7 @@ import {
 import { UsersService } from './users.service';
 import {
   QueryUserDto,
+  QueryMentorDto,
   CreateAdminDto,
   CreateMentorDto,
   CreateAssistantDto,
@@ -33,13 +34,11 @@ import { UserRole } from '@prisma/client';
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
-  // ==================== Public Endpoints ====================
-
   @Get('mentors')
   @ApiOperation({ summary: "Barcha mentorlar ro'yxati" })
   @ApiResponse({ status: 200, description: "Mentorlar ro'yxati" })
-  async getMentors() {
-    return this.usersService.getMentors();
+  async getMentors(@Query() query: QueryMentorDto) {
+    return this.usersService.getMentors(query);
   }
 
   @Get('mentors/:id')
@@ -49,13 +48,11 @@ export class UsersController {
     return this.usersService.getMentorById(id);
   }
 
-  // ==================== Admin Only Endpoints ====================
-
   @Get()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Barcha foydalanuvchilar ro'yxati" })
+  @ApiOperation({ summary: "Barcha foydalanuvchilar ro'yxati(Admin)" })
   @ApiResponse({ status: 200, description: "Foydalanuvchilar ro'yxati" })
   async findAll(@Query() query: QueryUserDto) {
     return this.usersService.findAll(query);
@@ -65,7 +62,7 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Foydalanuvchi ma'lumotlarini olish" })
+  @ApiOperation({ summary: "Foydalanuvchi ma'lumotlarini olish(Admin)" })
   @ApiResponse({ status: 200, description: "Foydalanuvchi ma'lumotlari" })
   async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -75,7 +72,9 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Telefon raqam bo'yicha foydalanuvchi qidirish" })
+  @ApiOperation({
+    summary: "Telefon raqam bo'yicha foydalanuvchi qidirish(Admin, Mentor)",
+  })
   @ApiResponse({ status: 200, description: 'Foydalanuvchi topildi' })
   async findByPhone(@Param('phone') phone: string) {
     return this.usersService.findByPhone(phone);
@@ -85,7 +84,7 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Yangi admin yaratish' })
+  @ApiOperation({ summary: 'Yangi admin yaratish (Admin)' })
   @ApiResponse({ status: 201, description: 'Admin yaratildi' })
   async createAdmin(@Body() dto: CreateAdminDto) {
     return this.usersService.createAdmin(dto);
@@ -95,7 +94,7 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Yangi mentor yaratish' })
+  @ApiOperation({ summary: 'Yangi mentor yaratish (Admin)' })
   @ApiResponse({ status: 201, description: 'Mentor yaratildi' })
   async createMentor(@Body() dto: CreateMentorDto) {
     return this.usersService.createMentor(dto);
@@ -105,7 +104,7 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MENTOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Yangi assistant yaratish' })
+  @ApiOperation({ summary: 'Yangi assistant yaratish (Admin, Mentor)' })
   @ApiResponse({ status: 201, description: 'Assistant yaratildi' })
   async createAssistant(@Body() dto: CreateAssistantDto) {
     return this.usersService.createAssistant(dto);
@@ -115,7 +114,7 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Mentor ma'lumotlarini yangilash" })
+  @ApiOperation({ summary: "Mentor ma'lumotlarini yangilash (Admin)" })
   @ApiResponse({ status: 200, description: 'Mentor yangilandi' })
   async updateMentor(@Param('id') id: string, @Body() dto: UpdateMentorDto) {
     return this.usersService.updateMentor(id, dto);
@@ -125,8 +124,11 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Foydalanuvchini o'chirish" })
-  @ApiResponse({ status: 200, description: "Foydalanuvchi o'chirildi" })
+  @ApiOperation({ summary: "Foydalanuvchini o'chirish (Admin)" })
+  @ApiResponse({
+    status: 200,
+    description: "Foydalanuvchi o'chirildi",
+  })
   async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

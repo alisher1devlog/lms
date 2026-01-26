@@ -85,7 +85,7 @@ export class CreateMentorDto {
 
   @ApiPropertyOptional({
     description: 'Mentor haqida',
-    example: 'Senior developer with 5+ years experience',
+    example: "tajribangiz va ko'nikmalaringiz haqida qisqacha",
   })
   @IsOptional()
   @IsString()
@@ -114,6 +114,46 @@ export class CreateMentorDto {
   @IsOptional()
   @IsString()
   telegram?: string;
+
+  @ApiPropertyOptional({
+    description: 'Instagram username',
+    example: '@mentor_instagram',
+  })
+  @IsOptional()
+  @IsString()
+  instagram?: string;
+
+  @ApiPropertyOptional({
+    description: 'LinkedIn profile URL',
+    example: 'https://linkedin.com/in/mentor',
+  })
+  @IsOptional()
+  @IsString()
+  linkedin?: string;
+
+  @ApiPropertyOptional({
+    description: 'Facebook profile URL',
+    example: 'https://facebook.com/mentor',
+  })
+  @IsOptional()
+  @IsString()
+  facebook?: string;
+
+  @ApiPropertyOptional({
+    description: 'GitHub username',
+    example: 'mentor-github',
+  })
+  @IsOptional()
+  @IsString()
+  github?: string;
+
+  @ApiPropertyOptional({
+    description: 'Personal website URL',
+    example: 'https://mentor-website.com',
+  })
+  @IsOptional()
+  @IsString()
+  website?: string;
 }
 
 export class CreateAssistantDto {
@@ -130,7 +170,7 @@ export class CreateAssistantDto {
 
   @ApiProperty({
     description: "To'liq ism",
-    example: 'Assistant User',
+    example: 'Adminov Adminjon',
   })
   @IsNotEmpty({ message: "To'liq ism kiritilishi shart" })
   @IsString()
@@ -138,20 +178,20 @@ export class CreateAssistantDto {
 
   @ApiProperty({
     description: 'Parol (kamida 6 ta belgi)',
-    example: 'password123',
+    example: 'string',
   })
   @IsNotEmpty({ message: 'Parol kiritilishi shart' })
   @IsString()
   @MinLength(6, { message: "Parol kamida 6 ta belgidan iborat bo'lishi kerak" })
   password: string;
 
-  @ApiPropertyOptional({
-    description: 'Email manzil',
-    example: 'assistant@example.com',
+  @ApiProperty({
+    description: 'Kurs ID (assistant qaysi kursga biriktiriladi)',
+    example: 'string',
   })
-  @IsOptional()
-  @IsEmail({}, { message: "Noto'g'ri email format" })
-  email?: string;
+  @IsNotEmpty({ message: 'Kurs ID kiritilishi shart' })
+  @IsString()
+  courseId: string;
 }
 
 export class UpdateMentorDto {
@@ -210,4 +250,44 @@ export class UpdateMentorDto {
   @IsOptional()
   @IsString()
   telegram?: string;
+
+  @ApiPropertyOptional({
+    description: 'Instagram username',
+    example: '@updated_instagram',
+  })
+  @IsOptional()
+  @IsString()
+  instagram?: string;
+
+  @ApiPropertyOptional({
+    description: 'LinkedIn profile URL',
+    example: 'https://linkedin.com/in/mentor',
+  })
+  @IsOptional()
+  @IsString()
+  linkedin?: string;
+
+  @ApiPropertyOptional({
+    description: 'Facebook profile URL',
+    example: 'https://facebook.com/mentor',
+  })
+  @IsOptional()
+  @IsString()
+  facebook?: string;
+
+  @ApiPropertyOptional({
+    description: 'GitHub username',
+    example: 'mentor-github',
+  })
+  @IsOptional()
+  @IsString()
+  github?: string;
+
+  @ApiPropertyOptional({
+    description: 'Personal website URL',
+    example: 'https://mentor-website.com',
+  })
+  @IsOptional()
+  @IsString()
+  website?: string;
 }

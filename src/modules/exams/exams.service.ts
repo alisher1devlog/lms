@@ -192,11 +192,11 @@ export class ExamsService {
     courseId: string,
   ): Promise<boolean> {
     const [purchased, assigned] = await Promise.all([
-      this.prisma.purchasedCourse.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      this.prisma.purchasedCourse.findFirst({
+        where: { userId, courseId },
       }),
-      this.prisma.assignedCourse.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      this.prisma.assignedCourse.findFirst({
+        where: { userId, courseId },
       }),
     ]);
 
